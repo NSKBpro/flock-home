@@ -104,6 +104,28 @@ button{font:inherit;color:inherit}
 .starrow svg{width:46px;height:46px}
 .starrow .mid{transform:translateY(-8px)}
 .tips{display:grid;gap:4px;margin:0;padding:0;list-style:none;font-size:13px;color:var(--muted)}
+/* daily puzzle */
+.ibtn{position:relative}
+.ibtn .dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 2px var(--panel)}
+.ibtn .streak{position:absolute;bottom:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--warn);color:var(--line);font-size:11px;font-weight:700;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.lvl.is-daily small{color:var(--warn)}
+.lvl.is-daily b{font-size:22px;white-space:nowrap}
+@media (max-width:440px){.moon{display:none}}
+.flame{display:flex;justify-content:center;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:22px;color:var(--warn)}
+.flame svg{width:30px;height:30px}
+/* wardrobe and unlock progress */
+.progress{display:grid;gap:6px;text-align:left;font-size:13px;color:var(--muted)}
+.progress .bar{height:8px;border-radius:8px;background:var(--panel);overflow:hidden}
+.progress .bar i{display:block;height:100%;background:var(--accent);border-radius:8px}
+.wardrobe{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wear{appearance:none;border:0;border-radius:14px;background:var(--panel);padding:6px 4px 8px;display:grid;justify-items:center;gap:2px;cursor:pointer;font-size:11px;font-weight:600;color:var(--ink)}
+.wear svg{width:54px;height:54px}
+.wear[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.wear:disabled{cursor:default;color:var(--muted)}
+.wear:disabled svg{opacity:.35;filter:grayscale(1)}
+.newunlock{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--panel);text-align:left;font-size:13px;color:var(--ink)}
+.newunlock svg{width:44px;height:44px;flex:none}
+.wear .streak,.newunlock .streak{display:none}
 /* tutorial hand */
 .hand{position:absolute;width:44px;height:52px;z-index:6;pointer-events:none;animation:handtap 1.1s ease-in-out infinite}
 .hand svg{width:100%;height:100%;display:block;overflow:visible}
@@ -129,9 +151,10 @@ button{font:inherit;color:inherit}
 <div id="app">
   <div class="stars" aria-hidden="true"></div><div class="moon" aria-hidden="true"></div>
   <header class="top">
-    <div class="lvl"><small>Level</small><b id="lvlNum">1</b><span class="boss" id="boss" hidden>Storm</span></div>
+    <div class="lvl"><small id="lvlLabel">Level</small><b id="lvlNum">1</b><span class="boss" id="boss" hidden>Storm</span></div>
     <div class="icons">
       <span class="total" id="starTotal" title="Stars earned"></span>
+      <button class="ibtn" id="dailyBtn" aria-label="Daily puzzle"></button>
       <button class="ibtn" id="soundBtn" aria-label="Sound on"></button>
       <button class="ibtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
     </div>
@@ -173,6 +196,9 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 
 let level=Math.max(1,store.get('fh.level',1)|0), soundOn=store.get('fh.sound',true)!==false, vibeOn=store.get('fh.vibe',true)!==false;
 let best=store.get('fh.stars',{});if(!best||typeof best!=='object')best={};
+let daily=store.get('fh.daily',{});if(!daily||typeof daily!=='object')daily={};   // {last:'YYYY-MM-DD', streak:n, top:n}
+let wear=store.get('fh.wear','');                                                  // equipped accessory id, '' = none
+let mode='level';                                                                  // 'level' or 'daily'
 let G=null, locked=false, over=false, flights=0;
 
 /* ---------- drawing ---------- */
@@ -188,7 +214,7 @@ function sym(s,fill){
   }
 }
 const symSvg=(i,fill)=>`<svg viewBox="0 0 10 10" aria-hidden="true">${sym(PAL[i].sym,fill)}</svg>`;
-function birdSVG(ci){
+function birdSVG(ci,acc=wear){
   const p=PAL[ci];
   return `<svg viewBox="0 0 40 40" aria-hidden="true">
   <g class="streak" stroke="rgba(244,239,230,.38)" stroke-width="1.8" stroke-linecap="round"><line x1="0" y1="17" x2="4" y2="17"/><line x1="1" y1="25" x2="5" y2="25"/></g>
@@ -200,8 +226,31 @@ function birdSVG(ci){
   <polygon points="33.8,13.2 39.4,15.9 33.8,18.6" fill="#3A2A1C"/>
   <circle cx="29.7" cy="13.8" r="1.8" fill="#16110C"/><circle cx="30.2" cy="13.2" r=".6" fill="#fff"/>
   <g transform="translate(14.6 21.4) scale(.62)">${sym(p.sym,'rgba(255,255,255,.92)')}</g>
+  ${acc?ACC_SVG[acc]||'':''}
 </svg>`;
 }
+/* ---------- accessories, unlocked with stars ----------
+   Drawn in the bird's own 40×40 space (head centre 27.6,15.4, radius 7.2). */
+const ACC=[
+  {id:'party',name:'Party hat',stars:10},
+  {id:'bow',name:'Bow tie',stars:25},
+  {id:'scarf',name:'Scarf',stars:45},
+  {id:'shades',name:'Sunglasses',stars:70},
+  {id:'flower',name:'Flower',stars:100},
+  {id:'crown',name:'Crown',stars:140},
+  {id:'tophat',name:'Top hat',stars:190},
+  {id:'halo',name:'Halo',stars:250},
+];
+const ACC_SVG={
+  party:`<g><polygon points="24.2,9.6 31.6,8.4 26.6,-1.6" fill="#57ACE8" stroke="#1F4E73" stroke-width=".8" stroke-linejoin="round"/><path d="M25.3 6.2l4.5-.8M24.9 3.2l3-.5" stroke="#F4C95D" stroke-width="1.3" stroke-linecap="round"/><circle cx="26.6" cy="-1.8" r="1.6" fill="#F48CC2"/></g>`,
+  bow:`<g><path d="M24.6 22.6l-3.6-2.4v5zM24.6 22.6l3.6-2.4v5z" fill="#E2483A" stroke="#7A1E16" stroke-width=".7" stroke-linejoin="round"/><circle cx="24.6" cy="22.6" r="1.2" fill="#B5302A"/></g>`,
+  scarf:`<g><path d="M21.6 20.2q6 2.6 11.6-.6l.6 2.6q-6.2 3.2-12.6.4z" fill="#F4C95D" stroke="#9A7420" stroke-width=".6"/><path d="M23.2 22.4l-1.4 6 2.6.4 1-6z" fill="#F4C95D" stroke="#9A7420" stroke-width=".6"/><path d="M24.3 21.4l1.6 0M27.6 21.6l1.6-.2M30.8 21l1.4-.4" stroke="#E2483A" stroke-width="1"/></g>`,
+  shades:`<g><rect x="26.4" y="11.6" width="7" height="4.2" rx="1.6" fill="#16110C"/><path d="M22.6 13.2h3.8" stroke="#16110C" stroke-width="1.2"/><path d="M28 12.6l2 .1" stroke="#fff" stroke-width=".7" stroke-linecap="round" opacity=".7"/></g>`,
+  flower:`<g transform="translate(22.6 9.4)"><circle cx="0" cy="-2.4" r="1.9" fill="#F48CC2"/><circle cx="2.3" cy="-.7" r="1.9" fill="#F48CC2"/><circle cx="1.4" cy="2" r="1.9" fill="#F48CC2"/><circle cx="-1.4" cy="2" r="1.9" fill="#F48CC2"/><circle cx="-2.3" cy="-.7" r="1.9" fill="#F48CC2"/><circle cx="0" cy="0" r="1.5" fill="#F4C95D"/></g>`,
+  crown:`<g><path d="M22.2 9.6l.8-6 3 3 1.6-4.4 1.6 4.4 3-3 .8 6z" fill="#F4C95D" stroke="#9A7420" stroke-width=".8" stroke-linejoin="round"/><circle cx="27.6" cy="7.6" r=".9" fill="#E2483A"/></g>`,
+  tophat:`<g><rect x="20.6" y="8.4" width="13.6" height="2" rx="1" fill="#1B1B22"/><rect x="22.8" y="0" width="9.2" height="9" rx="1.2" fill="#24242D"/><rect x="22.8" y="6" width="9.2" height="1.8" fill="#E2483A"/></g>`,
+  halo:`<g><ellipse cx="27.6" cy="4.4" rx="6.6" ry="2" fill="none" stroke="#F4C95D" stroke-width="1.6"/><ellipse cx="27.6" cy="4.4" rx="6.6" ry="2" fill="none" stroke="#FFF3C4" stroke-width=".5"/></g>`,
+};
 const BOWL=c=>`<svg class="bowl" viewBox="0 0 132 30" aria-hidden="true"><path d="M4 6 Q66 40 128 6 Q118 28 66 28 Q14 28 4 6Z" fill="#5A4330"/><path d="M8 9 Q66 34 124 9" stroke="#7A5B40" stroke-width="2" fill="none"/><path d="M14 15 Q66 34 118 15" stroke="#7A5B40" stroke-width="2" fill="none"/><path d="M22 7 l10 16 M44 9 l6 17 M66 10 v18 M88 9 l-6 17 M110 7 l-10 16" stroke="#3E2D20" stroke-width="1.6"/><path d="M4 6 Q66 18 128 6" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
 
 /* ---------- audio ---------- */
@@ -241,7 +290,21 @@ const Ads={
 /* ---------- haptics (Android browsers; iOS ignores it) ---------- */
 function buzz(pattern){if(!vibeOn)return;try{navigator.vibrate&&navigator.vibrate(pattern)}catch(e){}}
 const STAR=(on)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="${on?'var(--accent)':'var(--cell-dot)'}" stroke="${on?'#B98A1E':'none'}" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
-function paintTotal(){const t=Object.values(best).reduce((a,b)=>a+(+b||0),0);$('#starTotal').innerHTML=STAR(true)+'<span>'+t+'</span>';$('#starTotal').setAttribute('aria-label',t+' stars earned')}
+const totalStars=()=>Object.values(best).reduce((a,b)=>a+(+b||0),0);
+function paintTotal(){const t=totalStars();$('#starTotal').innerHTML=STAR(true)+'<span>'+t+'</span>';$('#starTotal').setAttribute('aria-label',t+' stars earned')}
+const nextUnlock=t=>ACC.find(a=>a.stars>t);
+// local calendar day, so the daily puzzle changes at the player's midnight
+const dayKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const dayNum=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+const yesterdayKey=()=>{const d=new Date();d.setDate(d.getDate()-1);return dayKey(d)};
+const liveStreak=()=>(daily.last===dayKey()||daily.last===yesterdayKey())?(daily.streak||0):0;
+const FLAME='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.6 3.2 4.9 5.6 4.9 10.6A4.9 4.9 0 0 1 12 18a4.9 4.9 0 0 1-4.9-4.9c0-2.4 1.3-3.6 2.3-4.9.3 1.3.9 2.1 1.8 2.6C11.6 8.6 11 6 12 2.5Z" fill="currentColor"/><path d="M12 21.5a3 3 0 0 1-3-3c0-1.7 1.7-2.4 3-4.6 1.3 2.2 3 2.9 3 4.6a3 3 0 0 1-3 3Z" fill="#F4C95D"/></svg>';
+const CAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M12 13.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></svg>';
+function paintDaily(){
+  const b=$('#dailyBtn'),st=liveStreak(),done=daily.last===dayKey();
+  b.innerHTML=CAL+(done?'':'<span class="dot"></span>')+(st?`<span class="streak">${st}</span>`:'');
+  b.setAttribute('aria-label',`Daily puzzle${done?' (solved today)':' (new)'}${st?`, ${st}-day streak`:''}`);
+}
 
 /* ---------- level setup ---------- */
 const COACH={
@@ -251,20 +314,30 @@ const COACH={
   4:'Check <b>Up next</b>. Free the birds the next nests need, and keep the wire clear.',
   5:'Waiting birds hop into their nest as soon as it arrives.',
 };
+function startDaily(){
+  mode='daily';
+  const lv=dailyLevel(dayNum(),LEVEL_PACK);
+  setupLevel(lv);
+}
 function startLevel(L){
-  level=L;store.set('fh.level',L);
-  const lv=levelFor(L,typeof LEVEL_PACK!=='undefined'?LEVEL_PACK:null);
+  mode='level';level=L;store.set('fh.level',L);
+  setupLevel(levelFor(L,typeof LEVEL_PACK!=='undefined'?LEVEL_PACK:null));
+}
+function setupLevel(lv){
+  const L=level;
   const open=lv.open||2;
   G={lv,birds:lv.birds.map((b,i)=>({...b,id:i,loc:{t:'grid'}})),occ:new Int16Array(lv.R*lv.C).fill(-1),
      nests:Array.from({length:open},(_,i)=>i<lv.queue.length?{c:lv.queue[i],filled:[]}:null),qi:Math.min(open,lv.queue.length),
      wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0,usedBooster:false};
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
   locked=false;over=false;flights=0;
-  $('#lvlNum').textContent=L;$('#boss').hidden=!lv.boss;
-  $('#coach').innerHTML=COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':'');
+  const isDaily=mode==='daily';
+  $('#lvlLabel').textContent=isDaily?'Daily':'Level';$('#lvlNum').textContent=isDaily?new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}):L;
+  $('#lvlLabel').parentElement.classList.toggle('is-daily',isDaily);$('#boss').hidden=!lv.boss||isDaily;
+  $('#coach').innerHTML=isDaily?'Today’s puzzle. Same for everyone, new one tomorrow.':(COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':''));
   stage.innerHTML='';
   G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
-  buildGrid();renderNests();renderQueue();buildWire();updateTools();paintTotal();
+  buildGrid();renderNests();renderQueue();buildWire();updateTools();paintTotal();paintDaily();
   hideOverlay();
   requestAnimationFrame(()=>{layoutAll();updateHand()});
 }
@@ -502,15 +575,36 @@ function starsFor(){
   if(G.peak>=G.lv.cap-1){n--;tips.push(`Keep at least two perches free (yours got to ${G.peak} of ${G.lv.cap})`)}
   return {n,tips};
 }
+function showDailyWin(){
+  const today=dayKey();
+  if(daily.last!==today){daily.streak=daily.last===yesterdayKey()?(daily.streak||0)+1:1;daily.last=today;daily.top=Math.max(daily.top||0,daily.streak);store.set('fh.daily',daily)}
+  paintDaily();
+  const st=daily.streak||1;
+  showOverlay(`<span class="eyebrow">Daily puzzle · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long'})}</span>
+    <div class="flame">${FLAME}<span>${st}-day streak</span></div>
+    <h2>Solved for today</h2>
+    <p>${st>1?'Keep it going.':'Start a streak.'} A new puzzle arrives at midnight.</p>
+    <button class="btn primary" id="backBtn">Back to level ${level}</button>`);
+  $('#backBtn').onclick=()=>startLevel(level);
+}
 function showWin(){
-  const lv=G.lv,{n,tips}=starsFor(),prev=+best[level]||0;
+  if(mode==='daily')return showDailyWin();
+  const lv=G.lv,{n,tips}=starsFor(),prev=+best[level]||0,before=totalStars();
   if(n>prev){best[level]=n;store.set('fh.stars',best);paintTotal()}
+  const after=totalStars(),unlocked=ACC.filter(a=>a.stars>before&&a.stars<=after).pop(),next=nextUnlock(after);
+  const prevStep=[...ACC].reverse().find(a=>a.stars<=after)?.stars||0;
+  const extra=unlocked
+    ?`<div class="newunlock"><svg viewBox="-2 -4 44 44">${birdSVG(1,unlocked.id).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg><span><b>New: ${unlocked.name}!</b><br>Your birds can wear it now.</span></div>
+      <button class="btn ghost" id="wearBtn">Wear the ${unlocked.name.toLowerCase()}</button>`
+    :next?`<div class="progress"><span>${after} / ${next.stars} stars to unlock the <b>${next.name.toLowerCase()}</b></span><div class="bar"><i style="width:${Math.round(100*(after-prevStep)/(next.stars-prevStep))}%"></i></div></div>`:'';
   showOverlay(`<span class="eyebrow">Level ${level}${lv.boss?' · Storm':''}</span>
     <div class="starrow" role="img" aria-label="${n} of 3 stars">${[0,1,2].map(i=>`<span class="${i===1?'mid':''}">${STAR(i<n)}</span>`).join('')}</div>
     <h2>The flock is home</h2>
     ${tips.length?`<ul class="tips">${tips.map(t=>`<li>${t}</li>`).join('')}</ul>`:`<p>A perfect flight. ${lv.birds.length} birds in ${lv.queue.length} nests.</p>`}
+    ${extra}
     <button class="btn primary" id="nextBtn">Next level</button>
     <button class="btn ghost" id="replayBtn">${n<3?'Play again for 3 stars':'Play again'}</button>`);
+  if(unlocked)$('#wearBtn').onclick=()=>{equip(unlocked.id);$('#wearBtn').textContent='Wearing it';$('#wearBtn').disabled=true};
   if(!RM)card.querySelectorAll('.starrow > span').forEach((el,i)=>el.animate([{transform:(i===1?'translateY(-8px) ':'')+'scale(0)',opacity:0},{transform:(i===1?'translateY(-8px) ':'')+'scale(1.15)',opacity:1,offset:.7},{transform:(i===1?'translateY(-8px) ':'')+'scale(1)',opacity:1}],{duration:380,delay:120+i*140,easing:'ease-out',fill:'backwards'}));
   $('#nextBtn').onclick=()=>{const L=level+1;if(L>=5&&L%3===0)Ads.midgame(()=>startLevel(L));else startLevel(L)};
   $('#replayBtn').onclick=()=>startLevel(level);
@@ -523,18 +617,36 @@ function showFail(){
     ${canGo?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${Ads.enabled?'Watch ad':'Keep going'} · +2 perches</button>`:''}
     <button class="btn ${canGo?'ghost':'primary'}" id="retryBtn">Try again</button>`);
   if(canGo)$('#contBtn').onclick=()=>{const go=()=>{hideOverlay();G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!')};Ads.enabled?Ads.rewarded('continue',go):go()};
-  $('#retryBtn').onclick=()=>startLevel(level);
+  $('#retryBtn').onclick=()=>mode==='daily'?startDaily():startLevel(level);
+}
+function equip(id){
+  wear=id;store.set('fh.wear',wear);
+  if(G)G.birds.forEach(b=>{const bi=b.el.querySelector('.bi');if(bi)bi.innerHTML=birdSVG(b.color)});
+}
+function showWardrobe(){
+  const t=totalStars();
+  showOverlay(`<h2>Wardrobe</h2><p>${t} stars earned. Earn stars to unlock more.</p>
+    <div class="wardrobe">
+      <button class="wear" data-id="" aria-pressed="${!wear}"><svg viewBox="-2 -4 44 44">${birdSVG(3,'').replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg>None</button>
+      ${ACC.map(a=>`<button class="wear" data-id="${a.id}" aria-pressed="${wear===a.id}" ${t<a.stars?'disabled':''}><svg viewBox="-2 -4 44 44">${birdSVG(3,a.id).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg>${t<a.stars?`${a.stars}★`:a.name}</button>`).join('')}
+    </div>
+    <button class="btn primary" id="wClose">Done</button>`);
+  card.querySelectorAll('.wear:not(:disabled)').forEach(b=>b.onclick=()=>{equip(b.dataset.id);showWardrobe()});
+  $('#wClose').onclick=hideOverlay;
 }
 function showMenu(){
   showOverlay(`<h2>Menu</h2>
+    <button class="btn row" id="mDaily">Daily puzzle${daily.last===dayKey()?' · solved today':''}</button>
+    <button class="btn row" id="mWear">Wardrobe · ${totalStars()}★</button>
     <button class="btn row" id="mHow">How to play</button>
-    <button class="btn row" id="mRestart">Restart level ${level}</button>
+    <button class="btn row" id="mRestart">${mode==='daily'?'Restart today’s puzzle':`Restart level ${level}`}</button>
     <button class="btn row" id="mVibe">Vibration: ${vibeOn?'on':'off'}</button>
     <button class="btn row" id="mReset">Start over from level 1</button>
     <button class="btn primary" id="mClose">Back to the game</button>`);
-  $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>startLevel(level);
+  $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>mode==='daily'?startDaily():startLevel(level);
+  $('#mDaily').onclick=startDaily;$('#mWear').onclick=showWardrobe;
   $('#mVibe').onclick=()=>{vibeOn=!vibeOn;store.set('fh.vibe',vibeOn);if(vibeOn)buzz(30);showMenu()};
-  $('#mReset').onclick=()=>{best={};store.set('fh.stars',best);startLevel(1)};$('#mClose').onclick=hideOverlay;
+  $('#mReset').onclick=()=>{best={};store.set('fh.stars',best);wear='';store.set('fh.wear','');startLevel(1)};$('#mClose').onclick=hideOverlay;
 }
 function showHow(){
   showOverlay(`<h2>How to play</h2><ul class="howto">
@@ -551,7 +663,7 @@ let handEl=null,rippleEl=null;
 function hideHand(){if(handEl){handEl.remove();handEl=null}if(rippleEl){rippleEl.remove();rippleEl=null}}
 function updateHand(){
   hideHand();
-  if(level!==1||over||!G||G.moves>=2)return;
+  if(mode!=='level'||level!==1||over||!G||G.moves>=2)return;
   const lv={...G.lv,cap:G.cap},path=solve(lv,liteFromG(),20000);
   if(!path||!path.length)return;
   const b=G.birds[path[0]],a=anchorFor(b);if(!a)return;
@@ -579,11 +691,12 @@ $('#undoBtn').onclick=()=>{ensureAudio();doUndo()};
 $('#hintBtn').onclick=()=>{ensureAudio();doHint()};
 $('#perchBtn').onclick=()=>{ensureAudio();doPerch()};
 $('#menuBtn').onclick=showMenu;
+$('#dailyBtn').onclick=()=>{if(mode==='daily'&&!over)return;startDaily()};
 $('#soundBtn').onclick=()=>{soundOn=!soundOn;store.set('fh.sound',soundOn);paintSound();if(soundOn)ensureAudio()};
 let rT=null;
 new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(layoutAll,60)}).observe(app);
 paintSound();
 startLevel(level);
-if(level===1&&!store.get('fh.seenHow',false)){store.set('fh.seenHow',true);setTimeout(showHow,250)}
+// No intro card: new players start playing at once; the hand and coach line teach level 1.
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>layoutAll());
 </script>

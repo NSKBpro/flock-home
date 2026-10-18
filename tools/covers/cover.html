@@ -16,7 +16,8 @@ const PAL=[
   {hex:'#EF6A5B',dark:'#B5423A',sym:'dot'},{hex:'#F2BE45',dark:'#B9861C',sym:'tri'},{hex:'#57ACE8',dark:'#2D72A6',sym:'sq'},
   {hex:'#55CB90',dark:'#2A8B5C',sym:'dia'},{hex:'#A97DE2',dark:'#6C4AA6',sym:'plus'},{hex:'#F48CC2',dark:'#B5548A',sym:'bar'}];
 function sym(s,fill){const f=`fill="${fill}"`;switch(s){case 'dot':return `<circle cx="5" cy="5" r="4" ${f}/>`;case 'tri':return `<polygon points="5,0.6 9.6,9 0.4,9" ${f}/>`;case 'sq':return `<rect x="1.2" y="1.2" width="7.6" height="7.6" rx="1" ${f}/>`;case 'dia':return `<polygon points="5,0 10,5 5,10 0,5" ${f}/>`;case 'plus':return `<path d="M3.6 0h2.8v3.6H10v2.8H6.4V10H3.6V6.4H0V3.6h3.6z" ${f}/>`;default:return `<rect x="0" y="3" width="10" height="4" rx="1.5" ${f}/>`}}
-function bird(ci,{legs=true,streak=false,wingUp=false}={}){
+const PARTY=`<g><polygon points="24.2,9.6 31.6,8.4 26.6,-1.6" fill="#57ACE8" stroke="#1F4E73" stroke-width=".8" stroke-linejoin="round"/><path d="M25.3 6.2l4.5-.8M24.9 3.2l3-.5" stroke="#F4C95D" stroke-width="1.3" stroke-linecap="round"/><circle cx="26.6" cy="-1.8" r="1.6" fill="#F48CC2"/></g>`;
+function bird(ci,{legs=true,streak=false,wingUp=false,acc=''}={}){
   const p=PAL[ci];
   const wing=wingUp?`<path d="M11 19 Q15 4 24 10 Q20 17 11 19Z" fill="${p.dark}"/>`:`<path d="M10 20.5 Q17 13.5 24.5 20.5 Q17 27.5 10 20.5Z" fill="${p.dark}" opacity=".7"/>`;
   return `<g>${streak?`<g stroke="rgba(244,239,230,.5)" stroke-width="1.8" stroke-linecap="round"><line x1="-8" y1="17" x2="1" y2="17"/><line x1="-5" y1="25" x2="3" y2="25"/></g>`:''}
@@ -24,18 +25,19 @@ function bird(ci,{legs=true,streak=false,wingUp=false}={}){
   <polygon points="9.5,19.5 3,14 4,26.5" fill="${p.dark}"/><ellipse cx="18" cy="22" rx="11.2" ry="8.6" fill="${p.hex}"/>${wing}
   <circle cx="27.6" cy="15.4" r="7.2" fill="${p.hex}"/><polygon points="33.8,13.2 39.4,15.9 33.8,18.6" fill="#2E2116"/>
   <circle cx="29.7" cy="13.8" r="1.8" fill="#16110C"/><circle cx="30.2" cy="13.2" r=".6" fill="#fff"/>
-  <g transform="translate(14.6 21.4) scale(.62)">${sym(p.sym,'rgba(255,255,255,.92)')}</g></g>`;
+  <g transform="translate(14.6 21.4) scale(.62)">${sym(p.sym,'rgba(255,255,255,.92)')}</g>${acc==='party'?PARTY:''}</g>`;
 }
 const F={
-  land:{W:1920,H:1080,title:{x:120,y:118,size:250,align:'left'},
-    wire:{x0:-60,y0:610,x1:1980,y1:520,sag:150},perch:{s:150,birds:[[0,.40,1],[2,.50,0],[5,.61,1],[1,.71,0],[4,.83,1]]},
-    nest:{cx:1500,y:930,w:440,c:3,s:150},fly:[[0,1180,170,140,-12],[2,1560,250,118,-6]],hill:880,moon:[1700,120,70]},
-  port:{W:800,H:1200,title:{x:400,y:96,size:168,align:'center'},
-    wire:{x0:-40,y0:640,x1:840,y1:600,sag:90},perch:{s:112,birds:[[0,.17,0],[2,.36,1],[5,.55,0],[1,.72,1],[4,.87,0]]},
-    nest:{cx:400,y:1060,w:330,c:3,s:112},fly:[[0,540,430,100,-12],[2,150,470,86,-6]],hill:980,moon:[680,70,44]},
-  sq:{W:800,H:800,title:{x:400,y:58,size:138,align:'center'},
-    wire:{x0:-40,y0:480,x1:840,y1:450,sag:70},perch:{s:96,birds:[[0,.19,0],[2,.37,1],[5,.55,0],[1,.71,1],[4,.86,0]]},
-    nest:{cx:400,y:735,w:260,c:3,s:88},fly:[[0,610,318,78,-12]],hill:680,moon:[90,60,34]},
+  // Birds are drawn large so the game still reads at portal thumbnail size (about 200×112).
+  land:{W:1920,H:1080,title:{x:110,y:96,size:236,align:'left'},
+    wire:{x0:-60,y0:720,x1:1980,y1:610,sag:110},perch:{s:236,birds:[[0,.44,1],[2,.585,0],[1,.73,1,'party'],[4,.88,0]]},
+    nest:{cx:1540,y:1000,w:500,c:3,s:178},fly:[[5,1230,120,178,-12]],hill:930,moon:[1790,105,64]},
+  port:{W:800,H:1200,title:{x:400,y:78,size:168,align:'center'},
+    wire:{x0:-40,y0:700,x1:840,y1:660,sag:80},perch:{s:172,birds:[[0,.13,0],[2,.375,1],[1,.62,0,'party'],[4,.87,1]]},
+    nest:{cx:400,y:1080,w:420,c:3,s:146},fly:[[5,520,395,138,-12]],hill:1000,moon:[690,62,42]},
+  sq:{W:800,H:800,title:{x:400,y:38,size:132,align:'center'},
+    wire:{x0:-40,y0:540,x1:840,y1:505,sag:56},perch:{s:146,birds:[[0,.13,0],[2,.375,1],[1,.62,0,'party'],[4,.87,1]]},
+    nest:{cx:400,y:772,w:310,c:3,s:110},fly:[[5,610,282,104,-12]],hill:712,moon:[86,56,32]},
 };
 const f=F[new URLSearchParams(location.search).get('f')||'land'];
 const c=document.getElementById('c');c.style.width=f.W+'px';c.style.height=f.H+'px';
@@ -66,7 +68,7 @@ function place(svg,x,y,s,{flip=false,rot=0}={}){
   el.style.transform=`${flip?'scaleX(-1) ':''}rotate(${rot}deg)`;el.innerHTML=svg;c.appendChild(el);return el;
 }
 // perched birds: feet (x=18,y=34 in 40-unit box) sit on the wire
-f.perch.birds.forEach(([ci,t,flip])=>{const p=pt(t),s=f.perch.s,u=s/40;place(bird(ci),p.x-18*u,p.y-34*u,s,{flip:!!flip})});
+f.perch.birds.forEach(([ci,t,flip,acc])=>{const p=pt(t),s=f.perch.s,u=s/40;place(bird(ci,{acc}),p.x-18*u,p.y-34*u,s,{flip:!!flip})});
 // nest with three birds of one colour
 const n=f.nest,bh=n.w*30/132;
 [-1,1,0].forEach(k=>{const s=n.s,u=s/40,x=n.cx+k*n.w*.3-18*u,y=n.y-bh*.15-30*u;place(bird(n.c,{legs:false}),x,y-(k===0?s*.1:0),s,{flip:k<0})});

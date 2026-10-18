@@ -12,6 +12,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [x] Ad placeholders: rewarded boosters, continue after a full wire, interstitial every 3 levels
 - [x] Make the wire matter: one open nest, 100 curated levels with measured difficulty and a sawtooth curve ([ADR 0005](adr/0005-one-open-nest-and-curated-pack.md))
 - [x] Stars per level, tutorial hand on level 1, vibration feedback
+- [x] Retention hooks for the trial: daily puzzle with streak, wardrobe unlocked by stars, no intro screen, covers readable at thumbnail size
 - [ ] Owner plays 10–15 levels and writes down what feels boring or unfair
 - [ ] 3–5 friends play on their phones; note where they stop
 - **Done when:** testers ask for "one more level" without being prompted

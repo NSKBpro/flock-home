@@ -40,6 +40,17 @@ A level takes 1–3 minutes. Sessions on web portals are typically 11–20 minut
 
 At Full Launch, interstitial ads appear only between levels, from level 5 on, every third level. Until then there are no ads at all ([ADR 0004](adr/0004-monetization-model.md)).
 
+## Daily puzzle
+
+- One puzzle per calendar day (the player's local midnight), the same for everyone. It is a mid-difficulty pack level (levels 15–80, no Storms), mirrored and recoloured by the date, so it is always solvable and looks new (`dailyLevel` in the engine, tested for 30 days).
+- Opened from the calendar button in the header, which shows a dot until today's puzzle is solved and a badge with the current streak.
+- Solving it extends the streak if yesterday's was solved, otherwise starts a new one at 1. The win screen shows the streak and "A new puzzle arrives at midnight".
+- Daily puzzles don't award level stars; the reward is the streak. Purpose: a reason to come back tomorrow (CrazyGames' day-1 retention metric).
+
+## Wardrobe
+
+Cosmetic accessories for the birds, unlocked by total stars: party hat (10), bow tie (25), scarf (45), sunglasses (70), flower (100), crown (140), top hat (190), halo (250). The win screen shows progress to the next one ("15 / 25 stars to unlock the bow tie") and offers to wear a new unlock straight away. Menu → Wardrobe to choose. Purely cosmetic; it gives a goal beyond the next level.
+
 ## Stars
 
 Each win earns 1–3 stars, saved per level on the player's device. The header shows the total.
@@ -55,7 +66,7 @@ The win screen says which star was missed and offers "Play again for 3 stars". S
 
 - Level 1 shows an animated hand on the bird to tap (the hint solver's choice) until the player has freed two birds.
 - Levels 1–5 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in.
-- The "How to play" card opens once on first launch and stays in the menu.
+- No intro screen: new players land straight in level 1. The "How to play" card is in the menu. CrazyGames measures how many visitors play at least a minute, and every screen before play costs some of them.
 
 ## Feel
 
