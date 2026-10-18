@@ -15,7 +15,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [x] Retention hooks for the trial: daily puzzle with streak, wardrobe unlocked by stars, no intro screen, covers readable at thumbnail size
 - [x] First-session teaching: hand shows free → blocked → free the blocker; one-time tips at the first block, wait, hop-in and last perch; nest count; ringed next nest; failure explanation; levels 1–5 booster-free practice; daily puzzle introduced on level 7
 - [ ] Owner plays 10–15 levels and writes down what feels boring or unfair
-- [ ] 3–5 friends play on their phones; note where they stop. No explanation before they start; afterwards ask them to explain why they lost. Questions to settle: is the blocked-bird lesson understood, do players notice "Up next", does the failure explanation change the retry, would Undo on the "wire is full" screen feel fair or make Keep going pointless
+- [ ] 3–5 friends play on their phones; note where they stop. No explanation before they start; afterwards ask them to explain why they lost. Questions to settle: is the blocked-bird lesson understood, do players notice "Up next", does the failure explanation change the retry, would Undo on the "wire is full" screen feel fair or make Keep going pointless, do players understand eggs on level 12 without help (and do they play past level 20)
 - **Done when:** testers ask for "one more level" without being prompted
 
 ## Milestone 2 — Ready to submit
@@ -49,7 +49,8 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [ ] Integrate the CrazyGames SDK: rewarded ads for boosters and continue, midgame ads between levels, gameplay start/stop events, cloud save
 - [ ] Mute and pause during ads
 - [ ] Ad integration acceptance (more than flipping `Ads.enabled`): reward only when the ad completes; handle no-fill and errors; block input while an ad request is open; restore the player's sound setting afterwards; a reward must never land on a different run after navigation; the game must work when the SDK or ads are unavailable; re-check the fail screen and booster ad offers against the [ad requirements](https://docs.crazygames.com/requirements/ads/) (optional, non-ad route treated equally, placement, frequency) in the QA tool
-- [ ] New mechanic every ~10 levels to keep it fresh (ideas in [GAME_DESIGN.md](GAME_DESIGN.md#content-ideas))
+- [x] First new mechanic before launch: eggs from level 12 ([ADR 0006](adr/0006-eggs.md))
+- [ ] More mechanics only if Basic Launch data shows players leaving for lack of variety (ideas in [GAME_DESIGN.md](GAME_DESIGN.md#content-ideas))
 - [ ] Daily puzzle with a shareable result
 - [ ] Monthly check of revenue; release payouts about once a quarter
 

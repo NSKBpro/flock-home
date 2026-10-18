@@ -71,7 +71,7 @@ The win screen says which star was missed and offers "Play again for 3 stars". S
 - The open nest shows its count (1/3) and the first "Up next" nest is ringed, so the current target and the order are readable at a glance.
 - The "wire is full" screen shows which birds were waiting and why: colours whose nest was not open or next in line, with one suggestion for the retry.
 - The daily puzzle is introduced on level 7 (coach line). Before that its button has no "new" dot, so new players are not pulled into a mid-difficulty puzzle before they know the rules.
-- Levels 1–7 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in, boosters costing a star, the daily puzzle. The line stays visible at every supported size (compact on short screens such as 800×450 and 360×640).
+- Levels 1–7 and 12 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in, boosters costing a star, the daily puzzle, eggs. The line stays visible at every supported size (compact on short screens such as 800×450 and 360×640).
 - No intro screen: new players land straight in level 1. The "How to play" card is in the menu. CrazyGames measures how many visitors play at least a minute, and every screen before play costs some of them.
 
 ## Feel
@@ -124,12 +124,15 @@ Night sky over a quiet field: deep blue-teal backdrop, warm moon, six bird colou
 
 Short synthesized chirps per colour, a soft bonk when blocked, a three-note chime when a nest fills, and win and fail jingles. Sound starts only after the first tap and can be muted.
 
+## Eggs (from level 12)
+
+An egg sits on a grid cell and blocks birds like a bird does, but cannot be tapped. It hatches, clearing the way, when a nest of its colour is completed. Eggs tie the board to the nest order: some birds cannot leave until a particular nest is filled, so "Up next" matters on the grid itself. One egg on level 12, one more every 20 levels up to four (Storms +1, breathers −1). Every egg blocks at least one bird, and placement keeps the known winning order valid. If every remaining bird is blocked, the "No bird can fly" screen offers Undo or Try again. Details and reasons: [ADR 0006](adr/0006-eggs.md).
+
 ## Content ideas
 
-New mechanics to introduce one at a time, roughly every 10 levels after launch:
+Further mechanics to introduce one at a time after launch, if the numbers say players want more variety:
 
 - **Sleeping bird:** cannot move until a neighbour leaves
-- **Egg:** an obstacle that blocks paths and disappears when its nest colour fills
 - **Pairs:** two birds tied together leave together
 - **Wind:** one row is pushed one cell sideways after every move
 - **Owl:** sits still all level; birds have to route around it

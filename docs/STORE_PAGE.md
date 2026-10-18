@@ -16,7 +16,7 @@ Flock Home is a calm puzzle game with a sharp twist. Birds sit on a roost, each 
 
 One nest is open at a time. Birds of its colour fly straight in. Every other bird waits on the wire, and the wire only has five perches. Look at which nests come next, free the right birds first, and keep the wire clear.
 
-100 curated puzzles that build up slowly, with a harder Storm level every ten and a breather right after. Earn up to three stars per level by finishing without boosters and keeping the wire calm, and collect stars to unlock hats, bow ties and crowns for the flock. Stuck? Undo a move, ask for a hint, or add a perch.
+100 curated puzzles that build up slowly, with a harder Storm level every ten and a breather right after. From level 12, eggs block the way until the nest of their colour is filled. Earn up to three stars per level by finishing without boosters and keeping the wire calm, and collect stars to unlock hats, bow ties and crowns for the flock. Stuck? Undo a move, ask for a hint, or add a perch.
 
 A new daily puzzle every day, the same for everyone. Solve it each day to build your streak.
 
