@@ -12,10 +12,12 @@ Web portals pay through ad revenue share. Rewarded video has the highest eCPM an
 - **Interstitial ads:** only between levels, from level 5, every third level.
 - **No banners** at launch.
 - **No in-app purchases** at launch. A one-time "Remove ads" purchase is considered for mobile or if CrazyGames invites the game to purchases.
-- Until Full Launch, ads are placeholders in the UI with the same timing, so the experience and the economy can be tested before the SDK is added.
+- **Until Full Launch, ads are off and nothing pretends to be an ad.** Every ad call goes through one `Ads` object in `src/game.html` (`Ads.enabled = false`, `Ads.rewarded()`, `Ads.midgame()`). While it is off: boosters are disabled when the free ones run out, "Keep going +2 perches" after a full wire is free (still at most twice per level), and breaks between levels are skipped. At Full Launch only that object changes.
+- *Amended 18 Oct 2026:* the first prototype showed fake ad screens as placeholders. They were removed before Basic Launch, because a portal reviewer or player would see them as real ads.
 
 ## Consequences
 
 - The full wire is the main monetization moment, which is why the wire must stay visible and fair (see [GAME_DESIGN.md](../GAME_DESIGN.md)).
 - Booster counts per level are part of the economy; changing them changes ad frequency.
-- The placeholder "Remove ads" menu toggle must be removed before Basic Launch, since nothing can be purchased there.
+- The placeholder "Remove ads" menu toggle was removed before Basic Launch, since nothing can be purchased there.
+- During Basic Launch the economy is more generous than it will be (free continues). Expect slightly longer sessions in the trial than after ads are switched on.

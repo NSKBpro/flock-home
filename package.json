@@ -8,10 +8,8 @@
     "test": "node --test tests/*.test.mjs",
     "sim": "node tools/sim.mjs",
     "levels": "node tools/gen-levels.mjs",
-    "covers": "python3 tools/covers/render.py"
-  },
-  "devDependencies": {
-    "@fontsource/sniglet": "5.3.0"
+    "covers": "python3 tools/covers/render.py",
+    "video": "python3 tools/video/record.py"
   },
   "engines": {
     "node": ">=20"

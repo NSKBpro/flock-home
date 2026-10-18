@@ -31,14 +31,36 @@ A level takes 1–3 minutes. Sessions on web portals are typically 11–20 minut
 
 ## Boosters and the failure moment
 
-| Booster | Free per level | When it runs out |
-|---|---|---|
-| Undo (last move) | 3 | Rewarded ad for +1 |
-| Hint (highlights a safe bird, computed by the solver) | 2 | Rewarded ad for +1 |
-| +1 Perch (wire gets longer, max 9) | 1 | Rewarded ad for +1 |
-| Continue after a full wire (+2 perches) | — | Rewarded ad, at most twice per level |
+| Booster | Free per level | When it runs out (Full Launch) | Until Full Launch |
+|---|---|---|---|
+| Undo (last move) | 3 | Rewarded ad for +1 | Disabled |
+| Hint (highlights a safe bird, computed by the solver) | 2 | Rewarded ad for +1 | Disabled |
+| +1 Perch (wire gets longer, max 9) | 1 | Rewarded ad for +1 | Disabled |
+| Keep going after a full wire (+2 perches, at most twice per level) | — | Rewarded ad | Free |
 
-Interstitial ads appear only between levels, from level 5 on, every third level.
+At Full Launch, interstitial ads appear only between levels, from level 5 on, every third level. Until then there are no ads at all ([ADR 0004](adr/0004-monetization-model.md)).
+
+## Stars
+
+Each win earns 1–3 stars, saved per level on the player's device. The header shows the total.
+
+- Start at 3.
+- −1 for using any booster (Undo, Hint, +1 Perch).
+- −1 if the wire got down to its last free perch (4 of 5).
+- A win after "Keep going" is always 1 star.
+
+The win screen says which star was missed and offers "Play again for 3 stars". Stars give a reason to replay easy levels and a visible sense of progress.
+
+## Onboarding
+
+- Level 1 shows an animated hand on the bird to tap (the hint solver's choice) until the player has freed two birds.
+- Levels 1–5 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in.
+- The "How to play" card opens once on first launch and stays in the menu.
+
+## Feel
+
+- Vibration on Android browsers: a light tick per flight, a bump when blocked, a double pulse when a nest fills, a longer buzz on a full wire. Can be turned off in the menu. iOS browsers ignore vibration.
+- Respect `prefers-reduced-motion`: no wing flaps, hand bobbing or feathers.
 
 ## Difficulty curve
 

@@ -17,10 +17,22 @@ const engine = stripExports(read('src/engine.js'));
 const levels = existsSync(join(root, 'src/levels.js')) ? stripExports(read('src/levels.js')) : 'const LEVEL_PACK = [];';
 const template = read('src/game.html');
 
-for (const marker of ['/*ENGINE*/', '/*LEVELS*/']) {
-  if (!template.includes(marker) && marker === '/*ENGINE*/') throw new Error(`Template is missing ${marker}`);
+// Fonts ship inside the file as data URIs: no requests to Google or any other host (ADR 0002).
+const FONTS = [
+  ['Sniglet', 800, 'sniglet-latin-800-normal.woff2'],
+  ['Figtree', 400, 'figtree-latin-400-normal.woff2'],
+  ['Figtree', 600, 'figtree-latin-600-normal.woff2'],
+  ['Figtree', 700, 'figtree-latin-700-normal.woff2'],
+];
+const fontFaces = FONTS.map(([family, weight, file]) => {
+  const data = readFileSync(join(root, 'assets/fonts', file)).toString('base64');
+  return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;src:url(data:font/woff2;base64,${data}) format('woff2')}`;
+}).join('\n');
+
+for (const marker of ['/*FONTS*/', '/*ENGINE*/', '/*LEVELS*/']) {
+  if (!template.includes(marker)) throw new Error(`Template is missing ${marker}`);
 }
-const fragment = template.replace('/*ENGINE*/', () => engine).replace('/*LEVELS*/', () => levels);
+const fragment = template.replace('/*FONTS*/', () => fontFaces).replace('/*ENGINE*/', () => engine).replace('/*LEVELS*/', () => levels);
 
 // Split the fragment into head material (title, meta, fonts, styles) and body (everything from #app on).
 const split = fragment.indexOf('<div id="app">');

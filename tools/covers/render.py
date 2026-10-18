@@ -1,6 +1,6 @@
 """Render the three CrazyGames cover images from tools/covers/cover.html.
 
-Needs: `npm install` (for the Sniglet font) and Python Playwright with Chromium.
+Needs: Python Playwright with Chromium. The font comes from assets/fonts.
 Usage: python3 tools/covers/render.py
 """
 import asyncio
@@ -26,7 +26,7 @@ async def main():
             await page.goto(f'{PAGE.as_uri()}?f={key}')
             await page.wait_for_selector('body[data-ready]')
             if not await page.evaluate("document.fonts.check('800 50px Sniglet')"):
-                raise SystemExit('Sniglet font did not load — run `npm install` first.')
+                raise SystemExit('Sniglet font did not load — check assets/fonts.')
             await page.screenshot(path=str(OUT / name))
             print('wrote', OUT / name)
         await browser.close()
