@@ -1,6 +1,6 @@
 """Browser regression checks for dist/index.html (headless Chromium via Python Playwright).
 
-Usage:  npm run build && npm run ui
+Usage:  npm run build && npm run ui          (or: python3 tools/ui-check.py path/to/index.html)
 Covers what the engine tests cannot: layout at portal and phone sizes, dialogs, daily-puzzle
 navigation and dates, undo, restart during animation, failure and continue, and that the page's
 own state matches the pure engine move by move. Exits non-zero if any check fails.
@@ -9,7 +9,7 @@ import json, pathlib, sys
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-URL = (ROOT / 'dist' / 'index.html').as_uri()
+URL = pathlib.Path(sys.argv[1]).resolve().as_uri() if len(sys.argv) > 1 else (ROOT / 'dist' / 'index.html').as_uri()
 results = []
 
 def check(name, ok, detail=''):
@@ -173,6 +173,69 @@ with sync_playwright() as p:
           return { stuck, won: card.textContent.includes('The flock is home') } }""")
         check(f'level {L}: quick last two taps end on the win screen, never "No bird can fly"', r['stuck'] == 0 and r['won'], r)
         ctx.close()
+
+    # ---- regressions for bugs fixed earlier (each failed before its fix) ----
+    # Undo restores the wire peak, so an undone move does not cost the "two perches free" star.
+    ctx, page, errs = open_page(br, 390, 844, save(8))
+    r = page.evaluate("""async () => {
+      const s = liteFromG(), lv = {...G.lv, cap: G.cap};
+      const wrong = freeMoves(lv, s).find(i => !s.nests.some(n => n && n.c === lv.birds[i].color && n.n < 3));
+      const b = G.birds[wrong]; await tapCell(b.r * G.lv.C + b.c); await new Promise(r => setTimeout(r, 200));
+      const during = G.peak; doUndo(); await new Promise(r => setTimeout(r, 400));
+      return { during, after: G.peak } }""")
+    check('regression: Undo restores the wire peak', r['during'] == 1 and r['after'] == 0, r)
+    ctx.close()
+
+    # A hint in a dead end keeps the hint and the star.
+    ctx, page, errs = open_page(br, 390, 844, save(8))
+    r = page.evaluate("""async () => {
+      mode = 'level'; level = 8;
+      setupLevel({ R: 1, C: 3, cap: 2, open: 1, queue: [0, 1], L: 8,
+        birds: [{ r: 0, c: 0, d: 3, color: 1 }, { r: 0, c: 2, d: 1, color: 1 }] });
+      await new Promise(r => setTimeout(r, 200));
+      await tapCell(0); await new Promise(r => setTimeout(r, 300));   // to the wire: now no way to win
+      doHint(); await new Promise(r => setTimeout(r, 100));
+      return { hints: G.tools.hint, booster: G.usedBooster } }""")
+    check('regression: a hint in a dead end is not charged', r['hints'] == 2 and r['booster'] is False, r)
+    ctx.close()
+
+    # +1 Perch is ignored while a bird is in the air.
+    ctx, page, errs = open_page(br, 390, 844, save(8), reduced=False)
+    r = page.evaluate("""async () => {
+      const m = freeMoves({...G.lv, cap: G.cap}, liteFromG())[0], b = G.birds[m];
+      tapCell(b.r * G.lv.C + b.c); doPerch();
+      await new Promise(r => setTimeout(r, 900));
+      return { cap: G.cap, perch: G.tools.perch } }""")
+    check('regression: +1 Perch does nothing mid-flight', r['cap'] == 5 and r['perch'] == 1, r)
+    ctx.close()
+
+    # "Start over from level 1" asks before erasing stars.
+    ctx, page, errs = open_page(br, 390, 844, save(12, 30))
+    page.evaluate('showMenu()'); page.click('#mReset'); page.wait_for_timeout(100)
+    kept = page.evaluate("Object.keys(JSON.parse(localStorage.getItem('fh.stars'))).length > 0")
+    asked = page.evaluate("!!document.querySelector('#rYes') && !!document.querySelector('#rCancel')")
+    check('regression: Start over asks first and keeps stars until confirmed', kept and asked, {'kept': kept, 'asked': asked})
+    if asked:
+        page.click('#rCancel'); page.wait_for_timeout(50)
+        page.evaluate('showMenu()'); page.click('#mReset'); page.click('#rYes'); page.wait_for_timeout(200)
+        check('regression: confirming Start over erases stars and goes to level 1',
+              page.evaluate("Object.keys(JSON.parse(localStorage.getItem('fh.stars'))).length === 0 && level === 1"))
+    ctx.close()
+
+    # Keyboard: focus stays on the board after a move, and arrow keys move between birds.
+    ctx, page, errs = open_page(br, 390, 844, save(8))
+    page.evaluate("""() => { const m = freeMoves({...G.lv, cap: G.cap}, liteFromG())[0], b = G.birds[m];
+      gridEl.children[b.r * G.lv.C + b.c].focus() }""")
+    page.keyboard.press('Enter'); page.wait_for_timeout(700)
+    on_cell = page.evaluate("document.activeElement.classList.contains('cell') && !document.activeElement.disabled")
+    before = page.evaluate('document.activeElement.dataset.i')
+    for k in ('ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'):
+        page.keyboard.press(k)
+        if page.evaluate('document.activeElement.dataset.i') != before: break
+    moved = page.evaluate('document.activeElement.dataset.i') != before
+    check('regression: keyboard focus stays on a bird after Enter', on_cell)
+    check('regression: arrow keys move focus between birds', moved)
+    ctx.close()
 
     # ---- fail, then keep going ----
     ctx, page, errs = open_page(br, 390, 844, save(9))
