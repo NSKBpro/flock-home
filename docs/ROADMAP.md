@@ -47,6 +47,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 
 - [ ] Integrate the CrazyGames SDK: rewarded ads for boosters and continue, midgame ads between levels, gameplay start/stop events, cloud save
 - [ ] Mute and pause during ads
+- [ ] Ad integration acceptance (more than flipping `Ads.enabled`): reward only when the ad completes; handle no-fill and errors; block input while an ad request is open; restore the player's sound setting afterwards; a reward must never land on a different run after navigation; the game must work when the SDK or ads are unavailable; re-check the fail screen and booster ad offers against the [ad requirements](https://docs.crazygames.com/requirements/ads/) (optional, non-ad route treated equally, placement, frequency) in the QA tool
 - [ ] New mechanic every ~10 levels to keep it fresh (ideas in [GAME_DESIGN.md](GAME_DESIGN.md#content-ideas))
 - [ ] Daily puzzle with a shareable result
 - [ ] Monthly check of revenue; release payouts about once a quarter

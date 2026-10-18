@@ -17,6 +17,7 @@ npm run sim 1 40   # difficulty report for levels 1–40
 npm run levels     # regenerate the curated level pack (about 2 minutes)
 npm run covers     # re-render cover images (Python Playwright)
 npm run video      # re-record preview videos (after a build; Python Playwright + ffmpeg)
+npm run ui         # browser regression checks (after a build; Python Playwright)
 ```
 
 Open `dist/index.html` in a browser to play.
@@ -31,6 +32,7 @@ Open `dist/index.html` in a browser to play.
 | `tools/build.mjs` | Produces `dist/index.html` (full document for CrazyGames) and `dist/artifact.html` (fragment for the playtest page). |
 | `tools/gen-levels.mjs` | Builds the curated level pack against the difficulty curve. |
 | `tools/sim.mjs` | Plays the shipped levels with simple bots and prints forced wire use and win rates. |
+| `tools/ui-check.py` | Browser regression checks: layout at portal and phone sizes, dialogs, daily puzzle, undo, fail and continue. |
 | `tools/covers/` | Cover image source (`cover.html`) and renderer (`render.py`). |
 | `tools/video/` | Records the CrazyGames preview videos from the real game (`record.py`). |
 | `tests/` | Engine tests. |

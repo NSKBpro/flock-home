@@ -2,14 +2,15 @@
   "name": "flock-home",
   "version": "0.1.0",
   "private": true,
-  "description": "Flock Home — a hybrid-casual web puzzle game: free the birds in the right order, fill the nests, don't let the wire fill up.",
+  "description": "Flock Home \u2014 a hybrid-casual web puzzle game: free the birds in the right order, fill the nests, don't let the wire fill up.",
   "scripts": {
     "build": "node tools/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "sim": "node tools/sim.mjs",
     "levels": "node tools/gen-levels.mjs",
     "covers": "python3 tools/covers/render.py",
-    "video": "python3 tools/video/record.py"
+    "video": "python3 tools/video/record.py",
+    "ui": "python3 tools/ui-check.py"
   },
   "engines": {
     "node": ">=20"
