@@ -1,0 +1,528 @@
+<title>Flock Home</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: one phone-shaped column, sky on top (nests, then the wire), the roost grid below, tools at the bottom. */
+:root{
+  --sky-top:#172A3B; --sky-bot:#24475B; --sky-end:#1B3547;
+  --panel:#1D3548; --panel-hi:#244259; --field:#12273A; --cell-dot:#2A4860;
+  --ink:#F4EFE6; --muted:#9CB3C2; --line:#0A1621; --wire:#0E1C27;
+  --warn:#FF8C5A; --accent:#F4C95D; --accent-ink:#2B1E04; --scrim:rgba(7,15,23,.66);
+  --display:'Sniglet','Trebuchet MS',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:linear-gradient(180deg,var(--sky-top),var(--sky-bot) 55%,var(--sky-end));color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#app{position:relative;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow:hidden}
+.stars{position:absolute;inset:0 0 auto 0;height:260px;pointer-events:none;opacity:.55;background:
+  radial-gradient(1.2px 1.2px at 12% 18%,var(--ink),transparent 60%),radial-gradient(1px 1px at 33% 8%,var(--ink),transparent 60%),
+  radial-gradient(1.4px 1.4px at 58% 22%,var(--ink),transparent 60%),radial-gradient(1px 1px at 72% 6%,var(--ink),transparent 60%),
+  radial-gradient(1px 1px at 88% 30%,var(--ink),transparent 60%),radial-gradient(1.2px 1.2px at 46% 40%,var(--ink),transparent 60%)}
+.moon{position:absolute;left:62%;top:18px;width:22px;height:22px;border-radius:50%;box-shadow:-6px 3px 0 0 #F6E7B8;opacity:.8;pointer-events:none}
+
+.top{display:flex;align-items:center;justify-content:space-between;padding-block:10px 2px;position:relative;z-index:2}
+.lvl{display:flex;align-items:baseline;gap:8px}
+.lvl small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.lvl b{font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
+.lvl .boss{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);padding:2px 7px;border-radius:99px;align-self:center}
+.icons{display:flex;gap:8px}
+.ibtn{width:40px;height:40px;border-radius:12px;border:0;background:var(--panel);display:grid;place-items:center;cursor:pointer}
+.ibtn svg{width:20px;height:20px}
+.coach{font-size:13px;line-height:1.35;color:var(--muted);text-align:center;min-height:18px;margin:2px 0 8px;text-wrap:balance}
+.coach b{color:var(--ink)}
+
+.nests{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slot{height:92px;position:relative}
+.nest{position:absolute;inset:0;border-radius:18px;background:color-mix(in srgb,var(--c) 13%,var(--panel));border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent)}
+.nest .seats{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:2px}
+.seat{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--c) 22%,transparent),transparent 62%)}
+.nest .bowl{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:132px;height:30px}
+.nest .tag{position:absolute;left:10px;top:8px;width:18px;height:18px;border-radius:50%;background:var(--c);display:grid;place-items:center}
+.nest .tag svg{width:10px;height:10px}
+.slot .done{position:absolute;inset:0;border-radius:18px;border:1.5px dashed var(--cell-dot);display:grid;place-items:center;color:var(--muted);font-size:12px}
+.queue{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;min-height:18px}
+.chip{width:16px;height:16px;border-radius:50%;display:grid;place-items:center}
+.chip svg{width:8px;height:8px}
+.more{letter-spacing:0;text-transform:none;font-weight:600}
+
+.wire{position:relative;height:78px;margin-top:2px}
+.wire svg.cable{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wire .cable path{fill:none;stroke:var(--wire);stroke-width:3;transition:stroke .2s}
+.wire .cable .pole{fill:var(--line)}
+.wire.tense .cable path{stroke:var(--warn)}
+.perch{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:2px solid var(--wire);background:var(--sky-bot)}
+.wire.tense .perch{border-color:var(--warn)}
+.wire-label{position:absolute;right:0;top:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.wire.tense .wire-label{color:var(--warn)}
+
+.field{flex:1;min-height:0;display:grid;place-items:center;padding-block:4px}
+.grid{display:grid;background:var(--field);border-radius:18px;padding:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.cell{appearance:none;border:0;background:transparent;padding:0;position:relative;cursor:pointer;width:var(--cell);height:var(--cell)}
+.cell::before{content:"";position:absolute;inset:44%;border-radius:50%;background:var(--cell-dot)}
+.cell:disabled{cursor:default}
+.cell.hint::after{content:"";position:absolute;inset:3px;border-radius:50%;border:2.5px solid var(--accent);animation:pulse .9s ease-in-out 3}
+@keyframes pulse{50%{transform:scale(1.12);opacity:.4}}
+
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-block:8px 12px}
+.tool{position:relative;height:58px;border-radius:16px;border:0;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:12px;font-weight:600}
+.tool svg{width:22px;height:22px}
+.tool:disabled{opacity:.45;cursor:default}
+.badge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.badge.ad{background:var(--ink);color:var(--line);letter-spacing:.06em}
+
+#stage{position:absolute;inset:0;pointer-events:none;z-index:5}
+.bird{position:absolute;transform-origin:0 0}
+.bi{width:100%;height:100%;transition:transform .16s ease}
+.bi svg{width:100%;height:100%;display:block;overflow:visible}
+.bi.d0{transform:rotate(-90deg)}.bi.d2{transform:rotate(90deg)}.bi.d3{transform:scaleX(-1)}
+.bird .legs{display:none}.bird.perched .legs{display:inline}
+.bird.perched .streak,.bird.flying .streak{display:none}
+.bird .wing{transform-box:fill-box;transform-origin:50% 30%}
+.bird.flying .wing{animation:flap .14s ease-in-out infinite alternate}
+@keyframes flap{to{transform:scaleY(-.7)}}
+.lane{position:absolute;background:var(--warn);border-radius:4px;opacity:.85}
+.feather{position:absolute;width:10px;height:16px;border-radius:50% 50% 50% 50%/70% 70% 30% 30%}
+
+.overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.card{background:var(--panel-hi);border-radius:24px;padding:24px 20px 20px;width:min(340px,100%);text-align:center;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.card h2{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.05;margin:0;text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.45;text-wrap:balance}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.btn{border:0;border-radius:14px;height:50px;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--cell-dot)}
+.btn.row{height:46px;font-weight:600;font-size:15px;background:var(--panel);justify-content:flex-start;padding-inline:16px}
+.btn svg{width:18px;height:18px}
+.adbar{height:6px;border-radius:6px;background:var(--panel);overflow:hidden}
+.adbar i{display:block;height:100%;width:0;background:var(--accent)}
+.adbox{aspect-ratio:16/9;max-width:100%;border-radius:14px;background:repeating-linear-gradient(135deg,var(--panel) 0 12px,var(--sky-bot) 12px 24px);display:grid;place-items:center;font-family:var(--display);font-size:20px;color:var(--muted)}
+.howto{display:grid;gap:10px;text-align:left;font-size:14px;line-height:1.4;color:var(--ink);margin:0;padding:0;list-style:none}
+.howto li{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:start}
+.howto span{width:22px;height:22px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-weight:700;font-size:12px;color:var(--accent)}
+.toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--line);font-weight:700;font-size:14px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.bird.flying .wing,.cell.hint::after{animation:none}.bi{transition:none}}
+@media (max-height:640px){.slot{height:80px}.seat{width:34px;height:34px}.wire{height:64px}.tool{height:50px}.coach{display:none}}
+</style>
+
+<div id="app">
+  <div class="stars" aria-hidden="true"></div><div class="moon" aria-hidden="true"></div>
+  <header class="top">
+    <div class="lvl"><small>Level</small><b id="lvlNum">1</b><span class="boss" id="boss" hidden>Storm</span></div>
+    <div class="icons">
+      <button class="ibtn" id="soundBtn" aria-label="Sound on"></button>
+      <button class="ibtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
+    </div>
+  </header>
+  <p class="coach" id="coach"></p>
+  <section class="nests" id="nests" aria-label="Nests"><div class="slot"></div><div class="slot"></div></section>
+  <div class="queue" id="queue"></div>
+  <section class="wire" id="wire" aria-label="Wire"><svg class="cable" id="cable" aria-hidden="true"></svg><span class="wire-label" id="wireLabel"></span></section>
+  <section class="field" id="field"><div class="grid" id="grid" role="grid" aria-label="Roost"></div></section>
+  <footer class="tools">
+    <button class="tool" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo<span class="badge" id="undoBadge"></span></button>
+    <button class="tool" id="hintBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3Z"/></svg>Hint<span class="badge" id="hintBadge"></span></button>
+    <button class="tool" id="perchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 14c6 4 14 4 20 0"/><path d="M12 5v6M9 8h6"/></svg>+1 Perch<span class="badge" id="perchBadge"></span></button>
+  </footer>
+  <div id="stage"></div>
+  <div class="overlay" id="overlay" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+const PAL=[
+  {name:'Coral',hex:'#EF6A5B',dark:'#B5423A',sym:'dot'},
+  {name:'Mustard',hex:'#F2BE45',dark:'#B9861C',sym:'tri'},
+  {name:'Sky',hex:'#57ACE8',dark:'#2D72A6',sym:'sq'},
+  {name:'Mint',hex:'#55CB90',dark:'#2A8B5C',sym:'dia'},
+  {name:'Plum',hex:'#A97DE2',dark:'#6C4AA6',sym:'plus'},
+  {name:'Rose',hex:'#F48CC2',dark:'#B5548A',sym:'bar'},
+];
+const DIRNAME=['up','right','down','left'];
+const $=s=>document.querySelector(s);
+const app=$('#app'),stage=$('#stage'),gridEl=$('#grid'),fieldEl=$('#field'),nestsEl=$('#nests'),wireEl=$('#wire'),queueEl=$('#queue'),overlay=$('#overlay'),card=$('#card');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const T=ms=>RM?Math.min(ms,90):ms;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+let level=Math.max(1,store.get('fh.level',1)|0), noAds=!!store.get('fh.noads',false), soundOn=store.get('fh.sound',true)!==false;
+let G=null, locked=false, over=false, flights=0;
+
+/* ---------- drawing ---------- */
+function sym(s,fill){
+  const f=`fill="${fill}"`;
+  switch(s){
+    case 'dot':return `<circle cx="5" cy="5" r="4" ${f}/>`;
+    case 'tri':return `<polygon points="5,0.6 9.6,9 0.4,9" ${f}/>`;
+    case 'sq':return `<rect x="1.2" y="1.2" width="7.6" height="7.6" rx="1" ${f}/>`;
+    case 'dia':return `<polygon points="5,0 10,5 5,10 0,5" ${f}/>`;
+    case 'plus':return `<path d="M3.6 0h2.8v3.6H10v2.8H6.4V10H3.6V6.4H0V3.6h3.6z" ${f}/>`;
+    default:return `<rect x="0" y="3" width="10" height="4" rx="1.5" ${f}/>`;
+  }
+}
+const symSvg=(i,fill)=>`<svg viewBox="0 0 10 10" aria-hidden="true">${sym(PAL[i].sym,fill)}</svg>`;
+function birdSVG(ci){
+  const p=PAL[ci];
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">
+  <g class="streak" stroke="rgba(244,239,230,.38)" stroke-width="1.8" stroke-linecap="round"><line x1="0" y1="17" x2="4" y2="17"/><line x1="1" y1="25" x2="5" y2="25"/></g>
+  <g class="legs" stroke="#3A2A1C" stroke-width="1.6" stroke-linecap="round"><line x1="16" y1="29" x2="15" y2="34"/><line x1="21" y1="29" x2="21" y2="34"/></g>
+  <polygon points="9.5,19.5 3,14 4,26.5" fill="${p.dark}"/>
+  <ellipse cx="18" cy="22" rx="11.2" ry="8.6" fill="${p.hex}"/>
+  <path class="wing" d="M10 20.5 Q17 13.5 24.5 20.5 Q17 27.5 10 20.5Z" fill="${p.dark}" opacity=".7"/>
+  <circle cx="27.6" cy="15.4" r="7.2" fill="${p.hex}"/>
+  <polygon points="33.8,13.2 39.4,15.9 33.8,18.6" fill="#3A2A1C"/>
+  <circle cx="29.7" cy="13.8" r="1.8" fill="#16110C"/><circle cx="30.2" cy="13.2" r=".6" fill="#fff"/>
+  <g transform="translate(14.6 21.4) scale(.62)">${sym(p.sym,'rgba(255,255,255,.92)')}</g>
+</svg>`;
+}
+const BOWL=c=>`<svg class="bowl" viewBox="0 0 132 30" aria-hidden="true"><path d="M4 6 Q66 40 128 6 Q118 28 66 28 Q14 28 4 6Z" fill="#5A4330"/><path d="M8 9 Q66 34 124 9" stroke="#7A5B40" stroke-width="2" fill="none"/><path d="M14 15 Q66 34 118 15" stroke="#7A5B40" stroke-width="2" fill="none"/><path d="M22 7 l10 16 M44 9 l6 17 M66 10 v18 M88 9 l-6 17 M110 7 l-10 16" stroke="#3E2D20" stroke-width="1.6"/><path d="M4 6 Q66 18 128 6" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+
+/* ---------- audio ---------- */
+let ac=null;
+function ensureAudio(){if(!soundOn)return;try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}}
+function tone(f0,f1,dur,type='sine',vol=.1,delay=0){
+  if(!soundOn||!ac)return;
+  const t=ac.currentTime+delay,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(ac.destination);o.start(t);o.stop(t+dur+.03);
+}
+const sfx={
+  chirp(c){const f=[1180,1320,1480,1580,1760,1980][c];tone(f,f*1.45,.08,'sine',.09);tone(f*1.15,f*1.7,.07,'sine',.06,.08)},
+  bonk(){tone(170,95,.13,'triangle',.16)},
+  hop(){tone(760,1020,.07,'sine',.06)},
+  nest(){[784,988,1175].forEach((f,i)=>tone(f,f*1.01,.16,'triangle',.08,i*.07))},
+  win(){[523,659,784,1047].forEach((f,i)=>tone(f,f,.24,'triangle',.09,i*.11))},
+  fail(){[440,370,294].forEach((f,i)=>tone(f,f*.97,.26,'triangle',.08,i*.15))},
+};
+const SOUND_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const SOUND_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="m17 9 5 6M22 9l-5 6"/></svg>';
+function paintSound(){const b=$('#soundBtn');b.innerHTML=soundOn?SOUND_ON:SOUND_OFF;b.setAttribute('aria-label',soundOn?'Mute sound':'Turn sound on')}
+
+/* ---------- level setup ---------- */
+const COACH={
+  1:'Tap a bird. It flies only if <b>nothing blocks the way it faces</b>.',
+  2:'Each bird flies to a nest of its colour. Three birds fill a nest.',
+  3:'No open nest for a bird? It waits on <b>the wire</b>. Fill all five perches and you lose.',
+  4:'Plan ahead: free the birds the nests need first.',
+};
+function startLevel(L){
+  level=L;store.set('fh.level',L);
+  const lv=generate(L);
+  G={lv,birds:lv.birds.map((b,i)=>({...b,id:i,loc:{t:'grid'}})),occ:new Int16Array(lv.R*lv.C).fill(-1),
+     nests:[{c:lv.queue[0],filled:[]},lv.queue.length>1?{c:lv.queue[1],filled:[]}:null],qi:Math.min(2,lv.queue.length),
+     wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0};
+  G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
+  locked=false;over=false;flights=0;
+  $('#lvlNum').textContent=L;$('#boss').hidden=!lv.boss;
+  $('#coach').innerHTML=COACH[L]||(lv.boss?'Storm level: more birds, tighter nests.':'');
+  stage.innerHTML='';
+  G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
+  buildGrid();renderNests();renderQueue();buildWire();updateTools();
+  hideOverlay();
+  requestAnimationFrame(()=>layoutAll());
+}
+
+function buildGrid(){
+  const {R,C}=G.lv;gridEl.innerHTML='';
+  gridEl.style.gridTemplateColumns=`repeat(${C},var(--cell))`;
+  for(let i=0;i<R*C;i++){const b=document.createElement('button');b.className='cell';b.dataset.i=i;gridEl.appendChild(b)}
+  for(let i=0;i<R*C;i++)cellAria(i);
+  sizeGrid();
+}
+function sizeGrid(){
+  const {R,C}=G.lv,fr=fieldEl.getBoundingClientRect();
+  const cell=Math.max(30,Math.floor(Math.min((fr.width-14)/C,(fr.height-20)/R,64)));
+  gridEl.style.setProperty('--cell',cell+'px');
+}
+function cellAria(i){
+  const el=gridEl.children[i],id=G.occ[i];
+  if(id<0){el.disabled=true;el.removeAttribute('aria-label');el.tabIndex=-1;return}
+  const b=G.birds[id];el.disabled=false;el.tabIndex=0;el.setAttribute('aria-label',`${PAL[b.color].name} bird facing ${DIRNAME[b.d]}`);
+}
+function renderNests(){[0,1].forEach(renderNest)}
+function renderNest(i){
+  const slot=nestsEl.children[i],n=G.nests[i];
+  if(!n){slot.innerHTML=G.qi>=G.lv.queue.length?'<div class="done">All home</div>':'';return}
+  const p=PAL[n.c];
+  slot.innerHTML=`<div class="nest" style="--c:${p.hex}" aria-label="${p.name} nest"><span class="tag">${symSvg(n.c,'rgba(255,255,255,.95)')}</span><div class="seats"><span class="seat"></span><span class="seat"></span><span class="seat"></span></div>${BOWL(p.hex)}</div>`;
+}
+function renderQueue(){
+  const rest=G.lv.queue.slice(G.qi);
+  if(!rest.length){queueEl.innerHTML='Last nests';return}
+  const shown=rest.slice(0,6);
+  queueEl.innerHTML='Up next'+shown.map(c=>`<span class="chip" style="background:${PAL[c].hex}" title="${PAL[c].name}">${symSvg(c,'rgba(255,255,255,.95)')}</span>`).join('')+(rest.length>6?`<span class="more">+${rest.length-6}</span>`:'');
+}
+function buildWire(){
+  wireEl.querySelectorAll('.perch').forEach(p=>p.remove());
+  for(let i=0;i<G.cap;i++){const p=document.createElement('span');p.className='perch';wireEl.appendChild(p)}
+  layoutWire();updateWireState();
+}
+function layoutWire(){
+  const W=wireEl.clientWidth,H=wireEl.clientHeight,y0=H*0.5,sag=H*0.2,pad=6;
+  const yAt=x=>{const t=(x-pad)/(W-2*pad);return y0+4*sag*t*(1-t)};
+  $('#cable').setAttribute('viewBox',`0 0 ${W} ${H}`);
+  $('#cable').innerHTML=`<rect class="pole" x="0" y="${y0-14}" width="5" height="${H-y0+14}" rx="2"/><rect class="pole" x="${W-5}" y="${y0-14}" width="5" height="${H-y0+14}" rx="2"/><path d="M${pad} ${y0} Q ${W/2} ${y0+2*sag} ${W-pad} ${y0}"/>`;
+  const ps=wireEl.querySelectorAll('.perch'),n=ps.length,inner=W-2*pad-40;
+  ps.forEach((p,i)=>{const x=pad+20+inner*(n===1?.5:i/(n-1));p.style.left=x+'px';p.style.top=yAt(x)+'px'});
+}
+function updateWireState(){
+  const n=G.wire.length;
+  wireEl.classList.toggle('tense',n>=G.cap-1);
+  $('#wireLabel').textContent=n>=G.cap-1&&n<G.cap?`${n} / ${G.cap} · 1 perch left`:`Wire ${n} / ${G.cap}`;
+}
+function updateTools(){
+  const t=G.tools,set=(id,v,dis)=>{const b=$('#'+id+'Badge');if(v>0){b.textContent=v;b.className='badge'}else{b.textContent=noAds?'—':'AD';b.className='badge ad'}$('#'+id+'Btn').disabled=!!dis};
+  set('undo',t.undo,!G.undo.length);set('hint',t.hint,false);set('perch',t.perch,G.cap>=9);
+}
+
+/* ---------- positions & motion ---------- */
+function anchorFor(b){
+  const sr=stage.getBoundingClientRect();let r,s,x,y;
+  if(b.loc.t==='grid'){r=gridEl.children[b.r*G.lv.C+b.c].getBoundingClientRect();s=r.width*.94;x=r.left-sr.left+(r.width-s)/2;y=r.top-sr.top+(r.height-s)/2}
+  else if(b.loc.t==='nest'){const seat=nestsEl.children[b.loc.n].querySelectorAll('.seat')[b.loc.k];if(!seat)return null;r=seat.getBoundingClientRect();s=r.width*1.12;x=r.left-sr.left+(r.width-s)/2;y=r.top-sr.top+(r.height-s)/2-2}
+  else if(b.loc.t==='wire'){const p=wireEl.querySelectorAll('.perch')[b.loc.i];if(!p)return null;r=p.getBoundingClientRect();s=Math.min(46,wireEl.clientHeight*.62);x=r.left-sr.left+r.width/2-s/2;y=r.top-sr.top+r.height/2-s*.84}
+  else return null;
+  return {x,y,s};
+}
+function orient(b){
+  const bi=b.el.firstChild,perched=b.loc.t!=='grid';
+  bi.className='bi'+(perched?'':' d'+b.d);b.el.classList.toggle('perched',perched);
+}
+function setBird(b,animate=false,via=null,dur=480){
+  const el=b.el,a=anchorFor(b);
+  if(!a){el.hidden=true;return Promise.resolve()}
+  let from=null;
+  if(animate&&!el.hidden){const r=el.getBoundingClientRect(),sr=stage.getBoundingClientRect();if(r.width>0)from={x:r.left-sr.left,y:r.top-sr.top,s:r.width}}
+  el.getAnimations().forEach(x=>x.cancel());
+  el.hidden=false;el.style.left=a.x+'px';el.style.top=a.y+'px';el.style.width=a.s+'px';el.style.height=a.s+'px';
+  if(!from){orient(b);return Promise.resolve()}
+  const tf=p=>`translate(${p.x-a.x}px,${p.y-a.y}px) scale(${p.s/a.s})`;
+  const frames=[{transform:tf(from)}];
+  if(via)frames.push({transform:tf(via),offset:.36});
+  frames.push({transform:'translate(0,0) scale(1)'});
+  const anim=el.animate(frames,{duration:T(dur),easing:via?'cubic-bezier(.35,.1,.35,1)':'cubic-bezier(.3,.8,.3,1)'});
+  return anim.finished.then(()=>orient(b),()=>{});
+}
+function layoutAll(){
+  if(!G)return;sizeGrid();layoutWire();
+  G.birds.forEach(b=>setBird(b,false));
+}
+function exitPoint(b){
+  const a=anchorFor(b),sr=stage.getBoundingClientRect(),gr=gridEl.getBoundingClientRect();
+  const cx=a.x+a.s/2,cy=a.y+a.s/2,gl=gr.left-sr.left,gt=gr.top-sr.top,m=a.s*.55;
+  let ex=cx,ey=cy;
+  if(b.d===0)ey=gt-m;else if(b.d===2)ey=gt+gr.height+m;else if(b.d===3)ex=gl-m;else ex=gl+gr.width+m;
+  return {x:ex-a.s/2,y:ey-a.s/2,s:a.s};
+}
+const center=b=>({x:parseFloat(b.el.style.left)+parseFloat(b.el.style.width)/2,y:parseFloat(b.el.style.top)+parseFloat(b.el.style.height)/2});
+
+/* ---------- play ---------- */
+async function tapCell(i){
+  if(over||locked||!G)return;
+  const id=G.occ[i];if(id<0)return;
+  const b=G.birds[id],bl=rayBlocker(G.occ,G.lv.R,G.lv.C,b.r,b.c,b.d);
+  if(bl>=0){blockedFx(b,G.birds[bl]);return}
+  pushUndo();G.moves++;
+  const via=exitPoint(b);
+  G.occ[i]=-1;cellAria(i);
+  const ni=G.nests.findIndex(n=>n&&n.c===b.color&&n.filled.length<3);
+  let full=false,wireFull=false;
+  if(ni>=0){const n=G.nests[ni];n.filled.push(id);b.loc={t:'nest',n:ni,k:n.filled.length-1};full=n.filled.length===3}
+  else{G.wire.push(id);b.loc={t:'wire',i:G.wire.length-1};G.peak=Math.max(G.peak,G.wire.length);wireFull=G.wire.length>=G.cap}
+  if(full||wireFull)locked=true;
+  updateWireState();updateTools();sfx.chirp(b.color);
+  b.el.classList.add('flying');flights++;
+  await setBird(b,true,via,520);
+  b.el.classList.remove('flying');flights--;
+  if(full){await completeNest(ni);locked=false}
+  if(wireFull){if(G.wire.length>=G.cap){await sleep(T(160));showFail();return}locked=false}
+  checkWin();
+}
+async function completeNest(ni){
+  await sleep(T(130));
+  const slot=nestsEl.children[ni],n=G.nests[ni],birds=n.filled.map(id=>G.birds[id]);
+  sfx.nest();
+  const anims=[];const nestEl=slot.querySelector('.nest');
+  if(nestEl)anims.push(nestEl.animate([{transform:'none',opacity:1},{transform:'translateY(-36px) scale(.92)',opacity:0}],{duration:T(380),easing:'ease-in',fill:'forwards'}));
+  birds.forEach((b,j)=>{b.el.classList.add('flying');anims.push(b.el.animate([{transform:'none',opacity:1},{transform:`translate(${(j-1)*34}px,-130px) scale(.7)`,opacity:0}],{duration:T(440),delay:T(j*40),easing:'ease-in',fill:'forwards'}))});
+  await Promise.all(anims.map(a=>a.finished.catch(()=>{})));
+  birds.forEach(b=>{b.loc={t:'gone'};b.el.getAnimations().forEach(a=>a.cancel());b.el.classList.remove('flying');b.el.hidden=true});
+  G.nests[ni]=G.qi<G.lv.queue.length?{c:G.lv.queue[G.qi++],filled:[]}:null;
+  renderNest(ni);renderQueue();
+  const fresh=slot.querySelector('.nest');
+  if(fresh)await fresh.animate([{transform:'translateY(-26px)',opacity:0},{transform:'none',opacity:1}],{duration:T(280),easing:'cubic-bezier(.2,.9,.3,1.25)'}).finished.catch(()=>{});
+  // keep birds already sitting in the other nest anchored after the re-render
+  G.birds.forEach(b=>{if(b.loc.t==='nest'&&b.loc.n!==ni)setBird(b,false)});
+  const nn=G.nests[ni];if(!nn)return;
+  let k=0;
+  while(nn.filled.length<3&&k<G.wire.length){
+    const id=G.wire[k],b=G.birds[id];
+    if(b.color!==nn.c){k++;continue}
+    G.wire.splice(k,1);nn.filled.push(id);b.loc={t:'nest',n:ni,k:nn.filled.length-1};
+    G.wire.forEach((wid,ix)=>G.birds[wid].loc={t:'wire',i:ix});
+    sfx.hop();updateWireState();
+    b.el.classList.add('flying');
+    const ps=[setBird(b,true,null,340)];G.wire.forEach(wid=>ps.push(setBird(G.birds[wid],true,null,260)));
+    await Promise.all(ps);b.el.classList.remove('flying');
+  }
+  if(nn.filled.length===3)await completeNest(ni);
+}
+function checkWin(){
+  if(over||!G.birds.every(b=>b.loc.t==='gone'))return;
+  over=true;sfx.win();feathers();setTimeout(showWin,T(650));
+}
+function blockedFx(b,blk){
+  ensureAudio();sfx.bonk();
+  if(!RM)b.el.animate([{transform:'none'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(-2px)'},{transform:'none'}],{duration:280});
+  blk.el.animate([{transform:'none'},{transform:`translate(${blk.el.offsetWidth*.04}px,${blk.el.offsetWidth*.04}px) scale(.92)`},{transform:'none'}],{duration:280});
+  const a=center(b),c=center(blk),ln=document.createElement('div');ln.className='lane';
+  if(Math.abs(a.x-c.x)>1){ln.style.left=Math.min(a.x,c.x)+'px';ln.style.top=(a.y-2)+'px';ln.style.width=Math.abs(a.x-c.x)+'px';ln.style.height='4px'}
+  else{ln.style.left=(a.x-2)+'px';ln.style.top=Math.min(a.y,c.y)+'px';ln.style.height=Math.abs(a.y-c.y)+'px';ln.style.width='4px'}
+  stage.insertBefore(ln,stage.firstChild);
+  ln.animate([{opacity:.9},{opacity:.9,offset:.5},{opacity:0}],{duration:T(650)}).finished.then(()=>ln.remove(),()=>ln.remove());
+}
+
+/* ---------- tools ---------- */
+function pushUndo(){G.undo.push(JSON.stringify({locs:G.birds.map(b=>b.loc),occ:[...G.occ],nests:G.nests,qi:G.qi,wire:G.wire}));if(G.undo.length>40)G.undo.shift()}
+function doUndo(){
+  if(locked||over||flights>0||!G.undo.length)return;
+  if(G.tools.undo<=0)return rewarded('undo');
+  G.tools.undo--;restore(G.undo.pop());toast('Move undone');
+}
+function restore(json){
+  const s=JSON.parse(json);
+  G.birds.forEach((b,i)=>b.loc=s.locs[i]);G.occ=Int16Array.from(s.occ);G.nests=s.nests;G.qi=s.qi;G.wire=s.wire;
+  renderNests();renderQueue();for(let i=0;i<G.occ.length;i++)cellAria(i);
+  G.birds.forEach(b=>setBird(b,true,null,300));updateWireState();updateTools();
+}
+function liteFromG(){
+  return {occ:Int16Array.from(G.occ),alive:Uint8Array.from(G.birds.map(b=>b.loc.t==='grid'?1:0)),rem:G.birds.filter(b=>b.loc.t==='grid').length,
+          wire:G.wire.map(id=>G.birds[id].color),nests:G.nests.map(n=>n?{c:n.c,n:n.filled.length}:null),qi:G.qi};
+}
+function doHint(){
+  if(locked||over||flights>0)return;
+  if(G.tools.hint<=0)return rewarded('hint');
+  const lv={...G.lv,cap:G.cap},s=liteFromG();
+  const path=solve(lv,s,40000);
+  let m=path&&path.length?path[0]:null;
+  if(m==null){
+    const free=freeMoves(lv,s);
+    m=free.find(i=>s.nests.some(n=>n&&n.c===lv.birds[i].color&&n.n<3));
+    if(m==null)m=free[0];
+    if(m!=null)toast('No sure way out from here. Try Undo.');
+  }
+  if(m==null)return;
+  G.tools.hint--;updateTools();
+  const b=G.birds[m],cell=gridEl.children[b.r*G.lv.C+b.c];
+  cell.classList.remove('hint');void cell.offsetWidth;cell.classList.add('hint');
+  setTimeout(()=>cell.classList.remove('hint'),2800);
+}
+function doPerch(){
+  if(over||G.cap>=9)return;
+  if(G.tools.perch<=0)return rewarded('perch');
+  G.tools.perch--;addPerch(1);toast('+1 perch on the wire');
+}
+function addPerch(n){
+  G.cap=Math.min(9,G.cap+n);buildWire();
+  G.wire.forEach(id=>setBird(G.birds[id],true,null,300));updateTools();
+}
+
+/* ---------- overlays & ad placeholders ---------- */
+function showOverlay(html){card.innerHTML=html;overlay.hidden=false;const f=card.querySelector('button');if(f)f.focus({preventScroll:true})}
+function hideOverlay(){overlay.hidden=true;card.innerHTML=''}
+let toastT=null;
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;app.appendChild(t);
+  clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),1800);
+}
+function showWin(){
+  const lv=G.lv;
+  showOverlay(`<span class="eyebrow">Level ${level}${lv.boss?' · Storm':''}</span><h2>The flock is home</h2>
+    <p>${lv.birds.length} birds in ${lv.queue.length} nests. ${G.peak?`Busiest the wire got: ${G.peak} of ${G.cap} perches.`:'Not one bird had to wait on the wire.'}</p>
+    <button class="btn primary" id="nextBtn">Next level</button>
+    <button class="btn ghost" id="replayBtn">Play again</button>`);
+  $('#nextBtn').onclick=()=>{const L=level+1;if(!noAds&&L>=5&&L%3===0)interstitial(()=>startLevel(L));else startLevel(L)};
+  $('#replayBtn').onclick=()=>startLevel(level);
+}
+function showFail(){
+  over=true;sfx.fail();
+  const canAd=G.continues<2&&G.cap<9;
+  showOverlay(`<span class="eyebrow">Level ${level}</span><h2>The wire is full</h2>
+    <p>All ${G.cap} perches are taken and no nest is open for these birds.</p>
+    ${canAd?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${noAds?'Continue':'Watch ad'} · +2 perches</button>`:''}
+    <button class="btn ${canAd?'ghost':'primary'}" id="retryBtn">Try again</button>`);
+  if(canAd)$('#contBtn').onclick=()=>rewarded('continue');
+  $('#retryBtn').onclick=()=>startLevel(level);
+}
+const REWARD={undo:'+1 Undo',hint:'+1 Hint',perch:'+1 Perch',continue:'+2 perches'};
+function rewarded(kind){
+  const grant=()=>{
+    hideOverlay();
+    if(kind==='continue'){G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!');return}
+    G.tools[kind]++;updateTools();toast(REWARD[kind]+' added');
+  };
+  if(noAds){grant();return}
+  adBreak('Rewarded video',`Placeholder for a rewarded video from your ad network. The player chose to watch it and gets <b>${REWARD[kind]}</b>.`,2600,grant,'Get reward');
+}
+function interstitial(next){adBreak('Ad break','Placeholder for an interstitial between levels. “Remove ads” in the menu turns these off.',2000,()=>{hideOverlay();next()},'Continue')}
+function adBreak(title,text,ms,done,label){
+  showOverlay(`<span class="eyebrow">${title}</span><div class="adbox">Ad</div><p>${text}</p><div class="adbar"><i id="adFill"></i></div><button class="btn primary" id="adDone" disabled style="opacity:.4">${label}</button>`);
+  const fill=$('#adFill'),btn=$('#adDone');
+  fill.animate([{width:'0%'},{width:'100%'}],{duration:RM?600:ms,fill:'forwards'}).finished.then(()=>{btn.disabled=false;btn.style.opacity=1;btn.focus()});
+  btn.onclick=done;
+}
+function showMenu(){
+  showOverlay(`<h2>Menu</h2>
+    <button class="btn row" id="mHow">How to play</button>
+    <button class="btn row" id="mRestart">Restart level ${level}</button>
+    <button class="btn row" id="mAds">${noAds?'Ads removed (demo) · tap to bring back':'Remove ads · €2.99 (demo, no charge)'}</button>
+    <button class="btn row" id="mReset">Start over from level 1</button>
+    <button class="btn primary" id="mClose">Back to the game</button>`);
+  $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>startLevel(level);
+  $('#mAds').onclick=()=>{noAds=!noAds;store.set('fh.noads',noAds);updateTools();showMenu()};
+  $('#mReset').onclick=()=>startLevel(1);$('#mClose').onclick=hideOverlay;
+}
+function showHow(){
+  showOverlay(`<h2>How to play</h2><ul class="howto">
+    <li><span>1</span>Tap a bird. It flies off only if no bird sits in the direction it faces.</li>
+    <li><span>2</span>It lands in a nest of its colour. Three birds fill a nest, and the next nest moves in.</li>
+    <li><span>3</span>If its nest isn’t open yet, the bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
+    <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li></ul>
+    <button class="btn primary" id="howOk">Got it</button>`);
+  $('#howOk').onclick=hideOverlay;
+}
+function feathers(){
+  if(RM)return;
+  const sr=stage.getBoundingClientRect(),cols=[...new Set(G.lv.queue)];
+  for(let i=0;i<26;i++){
+    const f=document.createElement('div');f.className='feather';f.style.background=PAL[cols[i%cols.length]].hex;
+    const x=Math.random()*sr.width;f.style.left=x+'px';f.style.top='-20px';stage.appendChild(f);
+    const dx=(Math.random()-.5)*120,rot=(Math.random()-.5)*720;
+    f.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${dx}px,${sr.height*.75}px) rotate(${rot}deg)`,opacity:0}],{duration:1400+Math.random()*900,delay:Math.random()*300,easing:'cubic-bezier(.25,.4,.45,1)'}).finished.then(()=>f.remove(),()=>f.remove());
+  }
+}
+
+/* ---------- wiring ---------- */
+gridEl.addEventListener('pointerdown',e=>{const c=e.target.closest('.cell');if(!c)return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
+gridEl.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const c=e.target.closest('.cell');if(!c)return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
+$('#undoBtn').onclick=()=>{ensureAudio();doUndo()};
+$('#hintBtn').onclick=()=>{ensureAudio();doHint()};
+$('#perchBtn').onclick=()=>{ensureAudio();doPerch()};
+$('#menuBtn').onclick=showMenu;
+$('#soundBtn').onclick=()=>{soundOn=!soundOn;store.set('fh.sound',soundOn);paintSound();if(soundOn)ensureAudio()};
+let rT=null;
+new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(layoutAll,60)}).observe(app);
+paintSound();
+startLevel(level);
+if(level===1&&!store.get('fh.seenHow',false)){store.set('fh.seenHow',true);setTimeout(showHow,250)}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>layoutAll());
+</script>

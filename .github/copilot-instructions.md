@@ -1,0 +1,1 @@
+Follow the repository guide in [AGENTS.md](../AGENTS.md). In short: keep `src/engine.js` pure and deterministic, keep every level solvable, ship one HTML file with no frameworks, run `npm test` and `npm run build` before committing, and record expensive-to-reverse decisions as ADRs in `docs/adr/`.
