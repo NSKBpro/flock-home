@@ -13,8 +13,9 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [x] Make the wire matter: one open nest, 100 curated levels with measured difficulty and a sawtooth curve ([ADR 0005](adr/0005-one-open-nest-and-curated-pack.md))
 - [x] Stars per level, tutorial hand on level 1, vibration feedback
 - [x] Retention hooks for the trial: daily puzzle with streak, wardrobe unlocked by stars, no intro screen, covers readable at thumbnail size
+- [x] First-session teaching: hand shows free → blocked → free the blocker; one-time tips at the first block, wait, hop-in and last perch; nest count; ringed next nest; failure explanation; levels 1–5 booster-free practice; daily puzzle introduced on level 7
 - [ ] Owner plays 10–15 levels and writes down what feels boring or unfair
-- [ ] 3–5 friends play on their phones; note where they stop
+- [ ] 3–5 friends play on their phones; note where they stop. No explanation before they start; afterwards ask them to explain why they lost. Questions to settle: is the blocked-bird lesson understood, do players notice "Up next", does the failure explanation change the retry, would Undo on the "wire is full" screen feel fair or make Keep going pointless
 - **Done when:** testers ask for "one more level" without being prompted
 
 ## Milestone 2 — Ready to submit
