@@ -16,6 +16,14 @@ const E = require('../src/engine.js');
 const COUNT = +(process.argv[2] || 100);
 const OPEN = 1; // nests open at a time (ADR 0005)
 
+// Eggs (ADR 0006): none before level 12 (taught there, after the first Storm and its breather),
+// then one, growing by one every 20 levels to four; Storms get one more, breathers one fewer.
+function eggsFor(L, storm, breather) {
+  if (L < 12) return 0;
+  const base = Math.min(4, 1 + Math.floor((L - 12) / 20));
+  return storm ? Math.min(4, base + 1) : breather ? Math.max(1, base - 1) : base;
+}
+
 // Target for level L. Sawtooth: climbs within each block of ten, Storm on x0, breather on x1.
 function spec(L) {
   if (L === 1) return { R: 4, C: 4, birds: 6, colors: 2, f: 0, g: 100, tries: 20 };
@@ -38,7 +46,7 @@ function spec(L) {
   const f = storm ? 3 : breather ? 1 : climb >= 2 ? 2 : 1;
   // Storms get a wider search: candidates that force three waiting birds are rare.
   const tries = storm ? 240 : tier === 0 ? 120 : 70;
-  return { R, C, birds, colors, f, g, storm, tries };
+  return { R, C, birds, colors, f, g, storm, preStorm: pos === 9, tries, eggs: eggsFor(L, storm, breather) };
 }
 
 function measure(lv) {
@@ -48,12 +56,15 @@ function measure(lv) {
 // The 80-run estimates above steer the search but are noisy (±5 points). Before a candidate can be
 // chosen it is re-measured with a large sample on separate seeds, and the hard limits are enforced on
 // that number: the 12% greedy floor (Storms keep a margin), and a Storm must be clearly harder than
-// the level before it and make at least two birds wait. The stored g and c are these validated values.
-const VALIDATE_RUNS = 2000, FLOOR = 12, STORM_FLOOR = 15, STORM_MARGIN = 3;
+// the level before it and make at least two birds wait (so the level before a Storm must not itself be
+// near the Storm floor). The stored g and c are these validated values.
+const VALIDATE_RUNS = 2000, FLOOR = 12, STORM_FLOOR = 15, STORM_MARGIN = 5;   // margin well above sampling noise (±1–2 points)
 function validate(lv, sp, prevG, m) {
   if (sp.storm && m.f < 2) return null;
   const g = E.botWinRate(lv, 1, VALIDATE_RUNS, 9001);
   if (g < (sp.storm ? STORM_FLOOR : FLOOR)) return null;
+  // the level before a Storm must leave room for a Storm that is harder but above its floor
+  if (sp.preStorm && g < STORM_FLOOR + STORM_MARGIN + 2) return null;
   if (sp.storm && prevG != null && g > prevG - STORM_MARGIN) return null;
   return { g, c: E.botWinRate(lv, 0.5, VALIDATE_RUNS, 9002) };
 }
@@ -76,7 +87,7 @@ for (let L = 1; L <= COUNT; L++) {
     // three waiting birds unavoidable. maxWire stays 3, so three stars remain possible on a Storm.
     const p = {
       R: sp.R, C: sp.C, birds: Math.min(birds, Math.floor(sp.R * sp.C * 0.8 / 3) * 3), colors: sp.colors,
-      d: L <= 2 ? 0 : Math.floor(rand() * (sp.storm ? 6 : 4)), block: [0, 0.4, 0.7][Math.floor(rand() * 3)], maxWire: 3, open: OPEN,
+      d: L <= 2 ? 0 : Math.floor(rand() * (sp.storm ? 6 : 4)), block: [0, 0.4, 0.7][Math.floor(rand() * 3)], maxWire: 3, open: OPEN, eggs: sp.eggs,
     };
     const lv = E.buildCandidate(p, rand);
     if (!lv) continue;
@@ -98,7 +109,7 @@ for (let L = 1; L <= COUNT; L++) {
   if (!best) throw new Error(`level ${L}: no candidate passed validation`);
   const { lv, m } = best;
   pack.push({ s: E.encodeLevel(lv), boss: !!sp.storm, f: m.f, g: m.g, c: m.c });
-  console.log(`L${String(L).padStart(3)} ${lv.R}x${lv.C} birds ${String(lv.birds.length).padStart(2)} colours ${sp.colors}` +
+  console.log(`L${String(L).padStart(3)} ${lv.R}x${lv.C} birds ${String(lv.birds.length).padStart(2)} colours ${sp.colors} eggs ${(lv.eggs || []).length}` +
     `  forced ${m.f} (want ${sp.f})  greedy ${String(m.g).padStart(3)}% (want ${sp.g})  casual ${String(m.c).padStart(3)}%${sp.storm ? '  STORM' : ''}`);
 }
 
