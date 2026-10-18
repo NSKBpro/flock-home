@@ -19,7 +19,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 ## Milestone 2 — Ready to submit
 
 - [x] Three cover images (landscape, portrait, square)
-- [x] Two preview videos, 19 s, landscape 16:9 and portrait 2:3, no sound, cover as first frame (`npm run video`)
+- [x] Two preview videos, about 17 s, landscape 16:9 and portrait 2:3, no sound, cover as first frame (`npm run video`)
 - [x] Game description and controls text for the CrazyGames page ([STORE_PAGE.md](STORE_PAGE.md))
 - [x] Local technical checks: wide 16:9 layout, no overflow from 360×640 to 1920×1080, keyboard play, no console errors, no external requests, time-based animation
 - [ ] Pass the CrazyGames QA tool (needs the developer account)

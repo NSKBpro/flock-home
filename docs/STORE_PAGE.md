@@ -33,5 +33,5 @@ Puzzle, Logic, Casual, Birds, Relaxing, Mobile-friendly
 ## Assets
 
 - Covers: `assets/covers/` (landscape 1920×1080, portrait 800×1200, square 800×800)
-- Preview videos: `assets/videos/` (landscape 1920×1080 and portrait 1080×1620, 19 s, no sound, cover as first frame)
+- Preview videos: `assets/videos/` (landscape 1920×1080 and portrait 1080×1620, about 17 s, no sound, cover as first frame, ends on a three-star win)
 - Game file: `dist/index.html` from `npm run build`
