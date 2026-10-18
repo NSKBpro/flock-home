@@ -119,7 +119,7 @@ with sync_playwright() as p:
     ctx.close()
 
     # ---- daily puzzle finished after midnight counts for its own day ----
-    ctx, page, errs = open_page(br, 390, 844, save(5))
+    ctx, page, errs = open_page(br, 390, 844, save(8))
     page.evaluate('startDaily()'); page.wait_for_timeout(200)
     day = page.evaluate('G.lv.day')
     page.evaluate("""() => { const RD = Date, off = 864e5;
@@ -167,8 +167,46 @@ with sync_playwright() as p:
         if (wrong == null) break; const b = G.birds[wrong]; await tapCell(b.r * G.lv.C + b.c); }
       await new Promise(r => setTimeout(r, 500)); }""")
     check('fail: "wire is full" screen shown', page.evaluate("over && !overlay.hidden && card.textContent.includes('The wire is full')"))
+    check('fail: shows the waiting birds and why', page.evaluate("card.querySelectorAll('.waiting .chip').length===G.cap && /Next time/.test(card.textContent)"))
     page.click('#contBtn'); page.wait_for_timeout(300)
     check('fail: Keep going adds two perches and resumes', page.evaluate('!over && overlay.hidden && G.cap===7'))
+    ctx.close()
+
+    # ---- first session: level 1 hand teaches free -> blocked -> free the blocker ----
+    ctx, page, errs = open_page(br, 390, 844, '')
+    steps = page.evaluate("""async () => {
+      const out = [], tap = async id => { const b = G.birds[id]; await tapCell(b.r * G.lv.C + b.c); await new Promise(r => setTimeout(r, 250)); };
+      let t = handTarget(); out.push(['free', t != null && rayBlocker(G.occ, G.lv.R, G.lv.C, G.birds[t].r, G.birds[t].c, G.birds[t].d) < 0]);
+      await tap(t);
+      t = handTarget(); const blk = rayBlocker(G.occ, G.lv.R, G.lv.C, G.birds[t].r, G.birds[t].c, G.birds[t].d);
+      out.push(['blocked', blk >= 0]);
+      await tap(t);
+      out.push(['tip', document.querySelector('#coach').textContent.startsWith('Blocked')]);
+      out.push(['points at blocker', handTarget() === blk]);
+      await tap(blk);
+      out.push(['done', handTarget() == null]);
+      return out }""")
+    check('level 1: hand shows a free bird, a blocked bird, then the bird in its way', all(ok for _, ok in steps), steps)
+    ctx.close()
+
+    ctx, page, errs = open_page(br, 390, 844, save(3))
+    r = page.evaluate("""async () => {
+      const s = liteFromG(), lv = {...G.lv, cap: G.cap};
+      const good = freeMoves(lv, s).find(i => s.nests.some(n => n && n.c === lv.birds[i].color));
+      let b = G.birds[good]; await tapCell(b.r * G.lv.C + b.c);
+      const count = nestsEl.querySelector('.count').textContent;
+      const s2 = liteFromG(), wrong = freeMoves(lv, s2).find(i => !s2.nests.some(n => n && n.c === lv.birds[i].color));
+      b = G.birds[wrong]; await tapCell(b.r * G.lv.C + b.c);
+      return {count, tip: document.querySelector('#coach').textContent, first: !!queueEl.querySelector('.chip.first')} }""")
+    check('nest shows its count (1/3)', r['count'] == '1/3', r)
+    check('first wait on the wire explains itself', 'waits on the wire' in r['tip'], r)
+    check('first Up next chip is marked', r['first'], r)
+    check('levels 1-5: boosters cost no star', page.evaluate("G.usedBooster=true;G.peak=0;starsFor().n") == 3)
+    check('daily: no "new" dot before level 7', page.evaluate("!document.querySelector('#dailyBtn .dot')"))
+    ctx.close()
+    ctx, page, errs = open_page(br, 390, 844, save(8))
+    check('level 6+: a booster costs a star', page.evaluate("G.usedBooster=true;G.peak=0;starsFor().n") == 2)
+    check('daily: "new" dot shown once the player is past level 6', page.evaluate("!!document.querySelector('#dailyBtn .dot')"))
     ctx.close()
 
     # ---- the playtest fragment hides the overlay by itself ----

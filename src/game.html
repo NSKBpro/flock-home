@@ -35,6 +35,10 @@ button{font:inherit;color:inherit}
 .ibtn svg{width:20px;height:20px}
 .coach{font-size:13px;line-height:1.35;color:var(--muted);text-align:center;min-height:18px;margin:2px 0 8px;text-wrap:balance}
 .coach b{color:var(--ink)}
+.coach.tip{color:var(--ink)}
+.coach.tip::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:1px}
+.waiting{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.waiting .chip{width:22px;height:22px}.waiting .chip svg{width:12px;height:12px}
 
 .nests{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:10px;max-width:calc(var(--n,2) * 240px);width:100%;margin-inline:auto}
 .slot{height:92px;position:relative}
@@ -44,11 +48,13 @@ button{font:inherit;color:inherit}
 .nest .bowl{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:132px;height:30px}
 .nest .tag{position:absolute;left:10px;top:8px;width:18px;height:18px;border-radius:50%;background:var(--c);display:grid;place-items:center}
 .nest .tag svg{width:10px;height:10px}
+.nest .count{position:absolute;right:10px;top:7px;font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;opacity:.85}
 .slot .done{position:absolute;inset:0;border-radius:18px;border:1.5px dashed var(--cell-dot);display:grid;place-items:center;color:var(--muted);font-size:12px}
 .queue{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;min-height:18px}
 .chip{width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
 .chip svg{width:11px;height:11px}
 .more{letter-spacing:0;text-transform:none;font-weight:600}
+.chip.first{width:24px;height:24px;box-shadow:0 0 0 2px var(--sky-top),0 0 0 3.5px var(--ink)}.chip.first svg{width:13px;height:13px}
 
 .wire{position:relative;height:78px;margin-top:2px}
 .wire svg.cable{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
@@ -344,7 +350,7 @@ const FLAME='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.6 3.2
 const CAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M12 13.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></svg>';
 function paintDaily(){
   const b=$('#dailyBtn'),st=liveStreak(),done=solvedToday();
-  b.innerHTML=CAL+(done?'':'<span class="dot"></span>')+(st?`<span class="streak">${st}</span>`:'');
+  b.innerHTML=CAL+(done||maxLevel<7?'':'<span class="dot"></span>')+(st?`<span class="streak">${st}</span>`:'');
   b.setAttribute('aria-label',`Daily puzzle${done?' (solved today)':' (new)'}${st?`, ${st}-day streak`:''}`);
 }
 
@@ -355,10 +361,21 @@ const COACH={
   3:'Wrong colour for the nest? The bird waits on <b>the wire</b>. Fill all five perches and you lose.',
   4:'Check <b>Up next</b>. Free the birds the next nests need, and keep the wire clear.',
   5:'Waiting birds hop into their nest as soon as it arrives.',
+  6:'From here on, <b>Undo, Hint and +1 Perch cost a star</b>. Levels 1–5 were practice.',
+  7:'New: a <b>daily puzzle</b>, the same for everyone. Find it on the calendar button.',
 };
 // The campaign run is parked while the player visits the daily puzzle and restored exactly on the
 // way back (board, nests, wire, boosters, undo history, star conditions). Not kept across reloads.
 let parked=null;
+// One-time tips at the moment something first happens (the first time a bird is blocked, waits on
+// the wire, hops in, the wire gets tense, a booster costs a star). Shown in the coach line, once per
+// player, so the rules are taught by what just happened rather than by text up front.
+let seen=store.get('fh.seen',{});if(!seen||typeof seen!=='object')seen={};
+function tipOnce(key,html){
+  if(seen[key])return;seen[key]=1;store.set('fh.seen',seen);
+  const c=$('#coach');c.innerHTML=html;c.classList.add('teach','tip');
+  if(!RM)c.animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'});
+}
 function startDaily(){
   if(locked||flights>0){setTimeout(startDaily,120);return}   // let the current move finish first
   if(mode==='level'&&G&&!over&&G.moves>0)parked={level,lv:G.lv,cap:G.cap,state:stateJSON(),undo:G.undo.slice(),tools:{...G.tools},
@@ -392,7 +409,7 @@ function setupLevel(lv){
   $('#lvlLabel').textContent=isDaily?'Daily':'Level';$('#lvlNum').textContent=isDaily?dayLabel(lv.day,'short'):L;
   $('#lvlLabel').parentElement.classList.toggle('is-daily',isDaily);$('#boss').hidden=!lv.boss||isDaily;
   $('#coach').innerHTML=isDaily?'Today’s puzzle. Same for everyone, new one tomorrow.':(COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':''));
-  $('#coach').classList.toggle('teach',!isDaily&&!!COACH[L]);
+  $('#coach').classList.toggle('teach',!isDaily&&!!COACH[L]);$('#coach').classList.remove('tip');
   stage.innerHTML='';
   G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
   buildGrid();renderNests();renderQueue();buildWire();updateTools();paintTotal();paintDaily();
@@ -427,13 +444,14 @@ function renderNest(i){
   const slot=nestsEl.children[i],n=G.nests[i];
   if(!n){slot.innerHTML=G.qi>=G.lv.queue.length?'<div class="done">All home</div>':'';return}
   const p=PAL[n.c];
-  slot.innerHTML=`<div class="nest" style="--c:${p.hex}" aria-label="${p.name} nest"><span class="tag">${symSvg(n.c)}</span><div class="seats"><span class="seat"></span><span class="seat"></span><span class="seat"></span></div>${BOWL(p.hex)}</div>`;
+  slot.innerHTML=`<div class="nest" style="--c:${p.hex}" aria-label="${p.name} nest"><span class="tag">${symSvg(n.c)}</span><span class="count">${n.filled.length}/3</span><div class="seats"><span class="seat"></span><span class="seat"></span><span class="seat"></span></div>${BOWL(p.hex)}</div>`;
 }
+function updateCount(i){const n=G.nests[i],el=i>=0&&nestsEl.children[i]&&nestsEl.children[i].querySelector('.count');if(el&&n)el.textContent=`${n.filled.length}/3`}
 function renderQueue(){
   const rest=G.lv.queue.slice(G.qi);
   if(!rest.length){queueEl.innerHTML='Last nest';return}
   const shown=rest.slice(0,6);
-  queueEl.innerHTML='Up next'+shown.map(c=>`<span class="chip" style="background:${PAL[c].hex}" title="${PAL[c].name}">${symSvg(c)}</span>`).join('')+(rest.length>6?`<span class="more">+${rest.length-6}</span>`:'');
+  queueEl.innerHTML='Up next'+shown.map((c,k)=>`<span class="chip${k?'':' first'}" style="background:${PAL[c].hex}" title="${PAL[c].name}">${symSvg(c)}</span>`).join('')+(rest.length>6?`<span class="more">+${rest.length-6}</span>`:'');
 }
 function buildWire(){
   wireEl.querySelectorAll('.perch').forEach(p=>p.remove());
@@ -510,7 +528,8 @@ async function tapCell(i){
   if(over||locked||!G||!overlay.hidden)return;
   const id=G.occ[i];if(id<0)return;
   const b=G.birds[id],bl=rayBlocker(G.occ,G.lv.R,G.lv.C,b.r,b.c,b.d);
-  if(bl>=0){blockedFx(b,G.birds[bl]);return}
+  if(bl>=0){if(handEl&&level===1&&mode==='level'&&!seen.blocked)G.teachBlock=bl;
+    blockedFx(b,G.birds[bl]);tipOnce('blocked',`Blocked: the <b>${PAL[G.birds[bl].color].name.toLowerCase()} bird</b> is in its way. Free that one first.`);updateHand();return}
   pushUndo();G.moves++;
   const via=exitPoint(b),run=runId,hadFocus=document.activeElement===gridEl.children[i];
   G.occ[i]=-1;cellAria(i);if(hadFocus)focusNear(b.r,b.c);
@@ -519,7 +538,12 @@ async function tapCell(i){
   if(ni>=0){const n=G.nests[ni];n.filled.push(id);b.loc={t:'nest',n:ni,k:n.filled.length-1};full=n.filled.length===3}
   else{G.wire.push(id);b.loc={t:'wire',i:G.wire.length-1};G.peak=Math.max(G.peak,G.wire.length);wireFull=G.wire.length>=G.cap}
   if(full||wireFull)locked=true;
-  updateWireState();updateTools();sfx.chirp(b.color);buzz(8);hideHand();
+  updateWireState();updateTools();sfx.chirp(b.color);buzz(8);hideHand();if(id===G.teachBlock)G.teachBlock=-1;
+  if(ni<0&&!wireFull){
+    if(!seen.wire)tipOnce('wire','No open nest for that colour, so it <b>waits on the wire</b> until its nest arrives.');
+    else if(G.wire.length===G.cap-1)tipOnce('tense','<b>One perch left.</b> Free only birds the open nest needs, or the wire fills up.');
+  }
+  updateCount(ni);
   say(ni>=0?`${PAL[b.color].name} bird to the nest, ${G.nests[ni].filled.length} of 3`:`${PAL[b.color].name} bird waits on the wire, ${G.wire.length} of ${G.cap} perches`);
   b.el.classList.add('flying');flights++;
   await setBird(b,true,via,520);
@@ -555,7 +579,8 @@ async function completeNest(ni,run=runId){
     if(b.color!==nn.c){k++;continue}
     G.wire.splice(k,1);nn.filled.push(id);b.loc={t:'nest',n:ni,k:nn.filled.length-1};
     G.wire.forEach((wid,ix)=>G.birds[wid].loc={t:'wire',i:ix});
-    sfx.hop();updateWireState();
+    sfx.hop();updateWireState();updateCount(ni);
+    tipOnce('hop','Its nest arrived, so the waiting bird <b>hopped in</b> from the wire.');
     b.el.classList.add('flying');
     const ps=[setBird(b,true,null,340)];G.wire.forEach(wid=>ps.push(setBird(G.birds[wid],true,null,260)));
     await Promise.all(ps);if(run!==runId)return;b.el.classList.remove('flying');
@@ -662,12 +687,13 @@ function toast(msg){
   const t=document.createElement('div');t.className='toast';t.textContent=msg;app.appendChild(t);
   clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),1800);
 }
-// Stars: 3 for a clean win, minus one for using a booster, minus one if the wire got down to its
-// last free perch; a win after "Keep going" is always 1 star.
+// Stars: 3 for a clean win, minus one for using a booster (not on the practice levels 1–5), minus
+// one if the wire got down to its last free perch; a win after "Keep going" is always 1 star.
+const PRACTICE=5;
 function starsFor(){
   if(G.continues>0)return {n:1,tips:['Win without running out of perches']};
   let n=3;const tips=[];
-  if(G.usedBooster){n--;tips.push('Finish without Undo, Hint or +1 Perch')}
+  if(G.usedBooster&&level>PRACTICE){n--;tips.push('Finish without Undo, Hint or +1 Perch')}
   if(G.peak>=G.lv.cap-1){n--;tips.push(`Keep at least two perches free (yours got to ${G.peak} of ${G.lv.cap})`)}
   return {n,tips};
 }
@@ -710,8 +736,15 @@ function showFail(){
   over=true;sfx.fail();buzz(120);hideHand();
   const canGo=G.continues<2&&G.cap<9;
   const isDaily=mode==='daily';
+  // Explain the loss: which colours were waiting for nests far down the line
+  const waitC=G.wire.map(id=>G.birds[id].color),soon=[...G.nests.filter(Boolean).map(n=>n.c),...G.lv.queue.slice(G.qi,G.qi+2)];
+  const far=[...new Set(waitC)].filter(c=>!soon.includes(c)).map(c=>PAL[c].name.toLowerCase());
+  const why=far.length
+    ?`The <b>${far.join('</b> and <b>')}</b> ${far.length>1?'birds were':'bird was'} waiting for nests far down the line. Next time, free birds for the open nest and the next one first.`
+    :`All of these nests were coming soon. Next time, fill the open nest first so they can hop in sooner.`;
   showOverlay(`<span class="eyebrow">${isDaily?'Daily puzzle':`Level ${level}`}</span><h2>The wire is full</h2>
-    <p>All ${G.cap} perches are taken and none of these birds’ nests is open yet.</p>
+    <div class="waiting" aria-label="Waiting on the wire: ${waitC.map(c=>PAL[c].name).join(', ')}">On the wire ${waitC.map(c=>`<span class="chip" style="background:${PAL[c].hex}">${symSvg(c)}</span>`).join('')}</div>
+    <p>${why}</p>
     ${canGo?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${Ads.enabled?'Watch ad':'Keep going'} · +2 perches</button>`:''}
     <button class="btn ${canGo?'ghost':'primary'}" id="retryBtn">Try again</button>
     ${isDaily?`<button class="btn ghost" id="backLvlBtn">Back to level ${level}</button>`:''}`);
@@ -786,20 +819,41 @@ function showHow(){
     <li><span>1</span>Tap a bird. It flies off only if no bird sits in the direction it faces.</li>
     <li><span>2</span>If its colour matches the open nest, it lands there. Three birds fill a nest, and the next nest moves in.</li>
     <li><span>3</span>Any other bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
-    <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li></ul>
+    <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li>
+    <li><span>★</span>Three stars: win without Undo, Hint or +1 Perch, and keep at least two perches free. On levels 1–5 boosters are free.</li></ul>
     <button class="btn primary" id="howOk">Got it</button>`,true);
   $('#howOk').onclick=hideOverlay;
 }
-/* ---------- tutorial hand: level 1, until the player has freed two birds ---------- */
+/* ---------- tutorial hand, level 1: free a bird; then try a blocked one (it bonks and the tip
+   explains); then free the bird that was in its way. Ends after that, or after two free moves if the
+   player has already seen a blocked bird. ---------- */
 const HAND=`<svg viewBox="0 0 44 52" aria-hidden="true"><path d="M17 4.5a5 5 0 0 1 10 0V22l3.2-.6a4.6 4.6 0 0 1 2.5.3l3.6 1.6a6 6 0 0 1 3.5 6.3l-1.6 10.6A10 10 0 0 1 28.3 49H21a10 10 0 0 1-8.1-4.2l-7-9.7a4.3 4.3 0 0 1 6.4-5.6L17 33.4Z" fill="#F7F1E6" stroke="#0B1824" stroke-width="2.4" stroke-linejoin="round"/><path d="M27 22v9M31.5 22.5v8.5" stroke="#0B1824" stroke-width="2" stroke-linecap="round"/></svg>`;
 let handEl=null,rippleEl=null;
 function hideHand(){if(handEl){handEl.remove();handEl=null}if(rippleEl){rippleEl.remove();rippleEl=null}}
+function handTarget(){
+  if(mode!=='level'||level!==1||over||!G)return null;
+  const lv={...G.lv,cap:G.cap},s=liteFromG(),open=G.nests.find(Boolean);
+  if(G.teachBlock===-1)return null;                                                       // lesson done
+  if(G.teachBlock>=0)return G.birds[G.teachBlock].loc.t==='grid'?G.teachBlock:null;       // free the bird in the way
+  if(G.moves>=1&&!seen.blocked){                                                          // show a blocked bird
+    let pick=null;
+    for(const b of G.birds){
+      if(b.loc.t!=='grid')continue;
+      const bl=rayBlocker(G.occ,lv.R,lv.C,b.r,b.c,b.d);if(bl<0)continue;
+      const k=G.birds[bl];if(rayBlocker(G.occ,lv.R,lv.C,k.r,k.c,k.d)>=0)continue;
+      if(pick==null||(open&&k.color===open.c))pick=b.id;
+      if(open&&k.color===open.c)break;
+    }
+    if(pick!=null)return pick;
+  }
+  if(G.moves>=2)return null;
+  const path=solve(lv,s,20000);
+  return path&&path.length?path[0]:null;
+}
 function updateHand(){
   hideHand();
-  if(mode!=='level'||level!==1||over||!G||G.moves>=2)return;
-  const lv={...G.lv,cap:G.cap},path=solve(lv,liteFromG(),20000);
-  if(!path||!path.length)return;
-  const b=G.birds[path[0]],a=anchorFor(b);if(!a)return;
+  const t=handTarget();if(t==null)return;
+  const b=G.birds[t],a=anchorFor(b);if(!a)return;
   const cx=a.x+a.s/2,cy=a.y+a.s/2;
   rippleEl=document.createElement('div');rippleEl.className='ripple';rippleEl.style.left=cx+'px';rippleEl.style.top=cy+'px';
   handEl=document.createElement('div');handEl.className='hand';handEl.innerHTML=HAND;handEl.style.left=(cx-16)+'px';handEl.style.top=(cy+6)+'px';
