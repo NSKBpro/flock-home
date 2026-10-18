@@ -42,10 +42,21 @@ function rayBlocker(occ, R, C, r, c, d) {
 }
 function rayLen(R, C, r, c, d) { return d === 0 ? r : d === 2 ? R - 1 - r : d === 3 ? c : C - 1 - c; }
 
+// ---- eggs ----
+// An egg sits on a grid cell and blocks birds exactly like a bird does, but cannot be tapped. It hatches
+// (and clears its cell) when a nest of its colour is completed. In occ, egg k is stored as id
+// birds.length + k, so every ray check treats it as a blocker with no extra code. See ADR 0006.
+const eggId = (lv, k) => lv.birds.length + k;
+function hatch(lv, s, color) {
+  if (!lv.eggs) return;
+  lv.eggs.forEach((e, k) => { const i = e.r * lv.C + e.c; if (e.color === color && s.occ[i] === eggId(lv, k)) s.occ[i] = -1; });
+}
+
 // ---- lite state: what the solver and generator simulate ----
 function initLite(lv) {
   const occ = new Int16Array(lv.R * lv.C).fill(-1);
   lv.birds.forEach((b, i) => { occ[b.r * lv.C + b.c] = i; });
+  (lv.eggs || []).forEach((e, k) => { occ[e.r * lv.C + e.c] = eggId(lv, k); });
   return {
     occ, alive: new Uint8Array(lv.birds.length).fill(1), rem: lv.birds.length, wire: [],
     nests: Array.from({ length: lv.open || 2 }, (_, i) => i < lv.queue.length ? { c: lv.queue[i], n: 0 } : null),
@@ -63,6 +74,7 @@ function freeMoves(lv, s) {
 }
 function resolveLite(lv, s, ni) {
   while (s.nests[ni] && s.nests[ni].n === 3) {
+    hatch(lv, s, s.nests[ni].c);
     s.nests[ni] = s.qi < lv.queue.length ? { c: lv.queue[s.qi++], n: 0 } : null;
     const n = s.nests[ni];
     if (!n) break;
@@ -186,7 +198,59 @@ function buildCandidate(p, rand, cap = 5) {
   }
   if (!isWon(s) || maxWire > (p.maxWire ?? cap - 2)) return null;
   lv.knownWire = maxWire; // perches used by the construction order: an upper bound on what is needed
+  if (p.eggs > 0 && !placeEggs(lv, p.eggs, rand)) return null;
   return lv;
+}
+
+// Place up to `want` eggs so the construction order still wins: an egg of colour c may sit on cell X
+// only if every bird whose flight path crosses X leaves (in that order) after the first nest of
+// colour c is completed. Only eggs that actually block at least one bird are placed, and no two eggs
+// share a colour. Needs one open nest (the completion order is then the queue order).
+function placeEggs(lv, want, rand) {
+  if ((lv.open || 2) !== 1) return false;
+  const { R, C, birds, queue } = lv, n = birds.length;
+  // removal step of each bird in the construction order, and the step at which each colour first completes
+  const step = new Int32Array(n), hatchAt = new Map();
+  let s = initLite(lv);
+  for (let k = 0; k < n; k++) {
+    const i = n - 1 - k; step[i] = k;
+    s = applyLite(lv, s, i);
+    const done = s.qi - 1 + (s.nests[0] ? 0 : 1);
+    for (let j = 0; j < done; j++) if (!hatchAt.has(queue[j])) hatchAt.set(queue[j], k);
+  }
+  // birds whose path crosses each empty cell
+  const crossing = Array.from({ length: R * C }, () => []);
+  birds.forEach((b, i) => {
+    const [dr, dc] = DIRS[b.d];
+    for (let rr = b.r + dr, cc = b.c + dc; rr >= 0 && rr < R && cc >= 0 && cc < C; rr += dr, cc += dc) crossing[rr * C + cc].push(i);
+  });
+  const occ = initLite(lv).occ, eggs = [], used = new Set();
+  // the first and last nests make dull eggs (hatch at once / never matters); prefer colours in between
+  const colors = shuffle([...new Set(queue.slice(1, -1))], rand);
+  for (const color of colors) {
+    if (eggs.length >= want) break;
+    if (used.has(color) || !hatchAt.has(color)) continue;
+    const h = hatchAt.get(color), ok = [];
+    for (let x = 0; x < R * C; x++) {
+      if (occ[x] >= 0 || !crossing[x].length) continue;
+      if (crossing[x].every(i => step[i] > h)) ok.push(x);
+    }
+    if (!ok.length) continue;
+    // favour cells that block more birds
+    ok.sort((a, b) => crossing[b].length - crossing[a].length);
+    const x = ok[Math.floor(rand() * Math.min(ok.length, 4))];
+    occ[x] = 1; eggs.push({ r: Math.floor(x / C), c: x % C, color }); used.add(color);
+  }
+  if (!eggs.length) return false;
+  lv.eggs = eggs;
+  // re-check the construction order with the eggs in place
+  s = initLite(lv);
+  for (let k = 0; k < n; k++) {
+    const i = n - 1 - k, b = birds[i];
+    if (rayBlocker(s.occ, R, C, b.r, b.c, b.d) >= 0) return false;
+    s = applyLite(lv, s, i);
+  }
+  return isWon(s);
 }
 
 // Procedural level for any number. Used for quick generation and as a fallback;
@@ -235,17 +299,21 @@ function botWinRate(lv, pref, runs = 120, seed = 1) {
 }
 
 // ---------- level pack encoding ----------
-// Compact string per level: "R,C,queue,birds,open" where queue is one digit per nest colour and
-// birds is 4 chars per bird: row, column (base 36), direction, colour; open = nests open at once.
+// Compact string per level: "R,C,queue,birds,open[,eggs]" where queue is one digit per nest colour,
+// birds is 4 chars per bird: row, column (base 36), direction, colour; open = nests open at once;
+// eggs (optional, ADR 0006) is 3 chars per egg: row, column (base 36), colour.
 function encodeLevel(lv) {
   const b = lv.birds.map(x => x.r.toString(36) + x.c.toString(36) + x.d + x.color).join('');
-  return `${lv.R},${lv.C},${lv.queue.join('')},${b},${lv.open || 2}`;
+  const e = (lv.eggs || []).map(x => x.r.toString(36) + x.c.toString(36) + x.color).join('');
+  return `${lv.R},${lv.C},${lv.queue.join('')},${b},${lv.open || 2}` + (e ? ',' + e : '');
 }
 function decodeLevel(str, cap = 5) {
-  const [R, C, q, b, open] = str.split(',');
+  const [R, C, q, b, open, e] = str.split(',');
   const birds = [];
   for (let i = 0; i < b.length; i += 4) birds.push({ r: parseInt(b[i], 36), c: parseInt(b[i + 1], 36), d: +b[i + 2], color: +b[i + 3] });
-  return { R: +R, C: +C, cap, open: +(open || 2), queue: [...q].map(Number), birds };
+  const lv = { R: +R, C: +C, cap, open: +(open || 2), queue: [...q].map(Number), birds };
+  if (e) { lv.eggs = []; for (let i = 0; i < e.length; i += 3) lv.eggs.push({ r: parseInt(e[i], 36), c: parseInt(e[i + 1], 36), color: +e[i + 2] }); }
+  return lv;
 }
 
 // Mirror and recolour a level. Keeps it solvable and keeps its difficulty identical,
@@ -256,6 +324,7 @@ function transformLevel(lv, flipH, flipV, perm) {
     ...lv,
     queue: lv.queue.map(c => perm[c]),
     birds: lv.birds.map(b => ({ r: flipV ? lv.R - 1 - b.r : b.r, c: flipH ? lv.C - 1 - b.c : b.c, d: dmap(b.d), color: perm[b.color] })),
+    ...(lv.eggs ? { eggs: lv.eggs.map(e => ({ r: flipV ? lv.R - 1 - e.r : e.r, c: flipH ? lv.C - 1 - e.c : e.c, color: perm[e.color] })) } : {}),
   };
 }
 
@@ -310,6 +379,6 @@ function creditDaily(prev, day) {
 const liveStreakOn = (d, today) => (d && d.last != null && today - d.last <= 1 && today >= d.last) ? (d.streak || 0) : 0;
 
 if (typeof module !== 'undefined') module.exports = {
-  DIRS, PALN, levelParams, rayBlocker, initLite, freeMoves, applyLite, isWon, isLost, solve, solveStatus, creditDaily, liveStreakOn,
+  DIRS, PALN, levelParams, rayBlocker, initLite, hatch, placeEggs, freeMoves, applyLite, isWon, isLost, solve, solveStatus, creditDaily, liveStreakOn,
   buildCandidate, generate, forcedWait, botWinRate, encodeLevel, decodeLevel, transformLevel, levelFor, dailyLevel, rng, shuffle,
 };
