@@ -8,3 +8,4 @@ Short records of decisions that are expensive to reverse. One file per decision,
 | [0002](0002-single-file-vanilla-js.md) | One HTML file, vanilla JavaScript, no engine | Accepted |
 | [0003](0003-solvable-by-construction.md) | Levels are solvable by construction | Accepted |
 | [0004](0004-monetization-model.md) | Rewarded ads first, interstitials only between levels | Accepted |
+| [0005](0005-one-open-nest-and-curated-pack.md) | One open nest, and a curated level pack with measured difficulty | Accepted |

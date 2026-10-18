@@ -36,7 +36,7 @@ button{font:inherit;color:inherit}
 .coach{font-size:13px;line-height:1.35;color:var(--muted);text-align:center;min-height:18px;margin:2px 0 8px;text-wrap:balance}
 .coach b{color:var(--ink)}
 
-.nests{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nests{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:10px;max-width:calc(var(--n,2) * 240px);width:100%;margin-inline:auto}
 .slot{height:92px;position:relative}
 .nest{position:absolute;inset:0;border-radius:18px;background:color-mix(in srgb,var(--c) 13%,var(--panel));border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent)}
 .nest .seats{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:2px}
@@ -119,7 +119,7 @@ button{font:inherit;color:inherit}
     </div>
   </header>
   <p class="coach" id="coach"></p>
-  <section class="nests" id="nests" aria-label="Nests"><div class="slot"></div><div class="slot"></div></section>
+  <section class="nests" id="nests" aria-label="Nests"></section>
   <div class="queue" id="queue"></div>
   <section class="wire" id="wire" aria-label="Wire"><svg class="cable" id="cable" aria-hidden="true"></svg><span class="wire-label" id="wireLabel"></span></section>
   <section class="field" id="field"><div class="grid" id="grid" role="grid" aria-label="Roost"></div></section>
@@ -134,6 +134,7 @@ button{font:inherit;color:inherit}
 
 <script>
 /*ENGINE*/
+/*LEVELS*/
 </script>
 <script>
 const PAL=[
@@ -209,20 +210,22 @@ function paintSound(){const b=$('#soundBtn');b.innerHTML=soundOn?SOUND_ON:SOUND_
 /* ---------- level setup ---------- */
 const COACH={
   1:'Tap a bird. It flies only if <b>nothing blocks the way it faces</b>.',
-  2:'Each bird flies to a nest of its colour. Three birds fill a nest.',
-  3:'No open nest for a bird? It waits on <b>the wire</b>. Fill all five perches and you lose.',
-  4:'Plan ahead: free the birds the nests need first.',
+  2:'Birds of the open nest’s colour fly straight in. Three birds fill a nest.',
+  3:'Wrong colour for the nest? The bird waits on <b>the wire</b>. Fill all five perches and you lose.',
+  4:'Check <b>Up next</b>. Free the birds the next nests need, and keep the wire clear.',
+  5:'Waiting birds hop into their nest as soon as it arrives.',
 };
 function startLevel(L){
   level=L;store.set('fh.level',L);
-  const lv=generate(L);
+  const lv=levelFor(L,typeof LEVEL_PACK!=='undefined'?LEVEL_PACK:null);
+  const open=lv.open||2;
   G={lv,birds:lv.birds.map((b,i)=>({...b,id:i,loc:{t:'grid'}})),occ:new Int16Array(lv.R*lv.C).fill(-1),
-     nests:[{c:lv.queue[0],filled:[]},lv.queue.length>1?{c:lv.queue[1],filled:[]}:null],qi:Math.min(2,lv.queue.length),
+     nests:Array.from({length:open},(_,i)=>i<lv.queue.length?{c:lv.queue[i],filled:[]}:null),qi:Math.min(open,lv.queue.length),
      wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0};
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
   locked=false;over=false;flights=0;
   $('#lvlNum').textContent=L;$('#boss').hidden=!lv.boss;
-  $('#coach').innerHTML=COACH[L]||(lv.boss?'Storm level: more birds, tighter nests.':'');
+  $('#coach').innerHTML=COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':'');
   stage.innerHTML='';
   G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
   buildGrid();renderNests();renderQueue();buildWire();updateTools();
@@ -247,7 +250,12 @@ function cellAria(i){
   if(id<0){el.disabled=true;el.removeAttribute('aria-label');el.tabIndex=-1;return}
   const b=G.birds[id];el.disabled=false;el.tabIndex=0;el.setAttribute('aria-label',`${PAL[b.color].name} bird facing ${DIRNAME[b.d]}`);
 }
-function renderNests(){[0,1].forEach(renderNest)}
+function renderNests(){
+  nestsEl.style.setProperty('--n',G.nests.length);
+  while(nestsEl.children.length<G.nests.length){const d=document.createElement('div');d.className='slot';nestsEl.appendChild(d)}
+  while(nestsEl.children.length>G.nests.length)nestsEl.lastChild.remove();
+  G.nests.forEach((_,i)=>renderNest(i));
+}
 function renderNest(i){
   const slot=nestsEl.children[i],n=G.nests[i];
   if(!n){slot.innerHTML=G.qi>=G.lv.queue.length?'<div class="done">All home</div>':'';return}
@@ -457,7 +465,7 @@ function showFail(){
   over=true;sfx.fail();
   const canAd=G.continues<2&&G.cap<9;
   showOverlay(`<span class="eyebrow">Level ${level}</span><h2>The wire is full</h2>
-    <p>All ${G.cap} perches are taken and no nest is open for these birds.</p>
+    <p>All ${G.cap} perches are taken and none of these birds’ nests is open yet.</p>
     ${canAd?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${noAds?'Continue':'Watch ad'} · +2 perches</button>`:''}
     <button class="btn ${canAd?'ghost':'primary'}" id="retryBtn">Try again</button>`);
   if(canAd)$('#contBtn').onclick=()=>rewarded('continue');
@@ -494,8 +502,8 @@ function showMenu(){
 function showHow(){
   showOverlay(`<h2>How to play</h2><ul class="howto">
     <li><span>1</span>Tap a bird. It flies off only if no bird sits in the direction it faces.</li>
-    <li><span>2</span>It lands in a nest of its colour. Three birds fill a nest, and the next nest moves in.</li>
-    <li><span>3</span>If its nest isn’t open yet, the bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
+    <li><span>2</span>If its colour matches the open nest, it lands there. Three birds fill a nest, and the next nest moves in.</li>
+    <li><span>3</span>Any other bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
     <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li></ul>
     <button class="btn primary" id="howOk">Got it</button>`);
   $('#howOk').onclick=hideOverlay;

@@ -8,9 +8,9 @@ Free the birds in the right order, fill the nests, and don't let the wire fill u
 
 1. The roost is a grid. Each bird faces up, right, down or left.
 2. Tap a bird. It flies off only if no other bird sits anywhere in the direction it faces. A blocked bird shakes and the blocking bird is highlighted.
-3. Two nests are open at a time. A bird that flies off goes to an open nest of its colour. Each nest holds three birds.
+3. One nest is open at a time. A bird of its colour flies straight in. Each nest holds three birds.
 4. When a nest fills, it flies away and the next nest in the queue moves in. Players can see the next six nests.
-5. If no open nest matches the bird, it waits on the wire. Waiting birds hop into a matching nest as soon as one arrives.
+5. Any other bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.
 6. The wire has five perches. When all five are taken the level is lost.
 7. The level is won when every bird is home.
 
@@ -53,10 +53,25 @@ Levels follow a **sawtooth**: difficulty climbs over a few levels, then a hard "
 | 11, 21, 31… | Breather after each Storm. |
 | 12+ | Mostly "must wait 2", some "must wait 3". |
 
-How difficulty is measured (see `tools/sim.mjs` and the level analyzer):
+How difficulty is measured (`npm run sim`, and stored per level in `src/levels.js`):
 
-- **Forced wait:** the fewest perches the best possible play needs. 0 means the wire is never needed, which makes the wire meaningless.
-- **Bot win rates:** a "greedy" bot always frees a bird whose nest is open, otherwise a random one. If it wins almost every time, the level has no real decisions.
+- **Forced wait (`f`):** the fewest perches the best possible play needs. 0 means the wire is never needed, which makes the wire meaningless.
+- **Greedy win rate (`g`):** a bot that always frees a bird of the open nest's colour when it can, otherwise a random bird. If it wins almost every time, the level has no real decisions.
+- **Casual win rate (`c`):** the same bot, but it only looks for a matching bird half the time.
+
+Targets used by `tools/gen-levels.mjs` (re-tune after human playtesting):
+
+| Block | Greedy win % at the start of the block → just before the Storm | Storm | Forced wait |
+|---|---|---|---|
+| 1–10 | 85 → 64 (levels 1–4 are a gentle tutorial) | ≥ 50 | 0 on levels 1–2, then 1–2; Storm 3 |
+| 11–20 | 75 → 54 | ≥ 40 | Breather 1, then 1–2; Storm 3 |
+| 21–30 | 65 → 44 | ≥ 30 | same pattern |
+| 31–40 | 58 → 37 | ≥ 23 | same pattern |
+| 41+ | 52 → 31 | ≥ 20 | same pattern |
+
+No level ships with a greedy win rate under 12%. From level 3 on, every level needs the wire at least once.
+
+The rule change from two open nests to one, and the reasons, are in [ADR 0005](adr/0005-one-open-nest-and-curated-pack.md).
 
 ## Art direction
 

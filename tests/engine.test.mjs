@@ -81,3 +81,45 @@ test('the level is lost when the wire is full', () => {
   s = E.applyLite(lv, s, 6); s = E.applyLite(lv, s, 7);
   assert.ok(E.isLost(lv, s));
 });
+
+// ---------- curated level pack (ADR 0005) ----------
+const { LEVEL_PACK } = require('../src/levels.js');
+
+test('the level pack has at least 100 levels', () => {
+  assert.ok(LEVEL_PACK.length >= 100);
+});
+
+test('every pack level decodes, is consistent, and has a verified winning order', () => {
+  LEVEL_PACK.forEach((e, i) => {
+    const L = i + 1, lv = E.levelFor(L, LEVEL_PACK);
+    assert.equal(E.encodeLevel(lv), e.s, `level ${L}: encode/decode round trip`);
+    assert.equal(lv.queue.length * 3, lv.birds.length, `level ${L}`);
+    const path = E.solve(lv, E.initLite(lv), 200000);
+    assert.ok(path, `level ${L}: no winning order found`);
+    let s = E.initLite(lv);
+    for (const m of path) { assert.ok(E.freeMoves(lv, s).includes(m)); s = E.applyLite(lv, s, m); assert.ok(!E.isLost(lv, s)); }
+    assert.ok(E.isWon(s), `level ${L}`);
+  });
+});
+
+test('the wire matters: from level 3 on every pack level needs at least one waiting bird', () => {
+  LEVEL_PACK.slice(2).forEach((e, i) => assert.ok(e.f >= 1, `level ${i + 3} never needs the wire`));
+});
+
+test('no pack level is near-impossible for the greedy bot', () => {
+  LEVEL_PACK.forEach((e, i) => assert.ok(e.g >= 12, `level ${i + 1}: greedy win ${e.g}%`));
+});
+
+test('levels beyond the pack are mirrored, recoloured copies that stay solvable and deterministic', () => {
+  for (const L of [LEVEL_PACK.length + 1, LEVEL_PACK.length + 7, LEVEL_PACK.length + 55]) {
+    const a = E.levelFor(L, LEVEL_PACK), b = E.levelFor(L, LEVEL_PACK);
+    assert.deepEqual(a, b);
+    assert.ok(E.solve(a, E.initLite(a), 200000), `level ${L}`);
+  }
+});
+
+test('mirroring a level keeps every bird path the same length', () => {
+  const lv = E.levelFor(30, LEVEL_PACK);
+  const t = E.transformLevel(lv, true, true, [5, 4, 3, 2, 1, 0]);
+  assert.deepEqual(E.freeMoves(lv, E.initLite(lv)), E.freeMoves(t, E.initLite(t)));
+});

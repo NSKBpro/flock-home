@@ -14,7 +14,7 @@ The game is a 2D grid puzzle with a few dozen sprites on screen. Portals reward 
 
 ## Consequences
 
-- The build is about 42 KB and loads instantly.
+- The build is well under 100 KB and loads instantly.
 - Tests and tools (`npm test`, `npm run sim`) run the same engine code as the game.
 - Wrapping the same file for mobile later (WebView / Capacitor) stays possible.
 - Richer visual effects would need hand-written canvas or SVG work rather than an engine's tools. Acceptable for this art style.
