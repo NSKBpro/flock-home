@@ -58,7 +58,7 @@ Cosmetic accessories for the birds, unlocked by total stars: party hat (10), bow
 Each win earns 1–3 stars, saved per level on the player's device. The header shows the total.
 
 - Start at 3.
-- −1 for using any booster (Undo, Hint, +1 Perch).
+- −1 for using any booster (Undo, Hint, +1 Perch), except on levels 1–5: those are practice, so asking for help while learning is never punished. Level 6's coach line says boosters cost a star from there on, and How to play lists the three-star rules.
 - −1 if the wire got down to its last free perch (4 of 5).
 - A win after "Keep going" is always 1 star.
 
@@ -66,8 +66,12 @@ The win screen says which star was missed and offers "Play again for 3 stars". S
 
 ## Onboarding
 
-- Level 1 shows an animated hand on the bird to tap (the hint solver's choice) until the player has freed two birds.
-- Levels 1–5 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in. The line stays visible at every supported size (compact on short screens such as 800×450 and 360×640).
+- Level 1 shows an animated hand that teaches by doing: first a free bird (it flies), then a blocked bird (it bonks, the bird in its way is outlined, and the tip line explains), then the bird that was in the way. Players who have already seen a blocked bird get two free moves instead.
+- One-time tips replace the coach line the first time something happens: a bird is blocked, a bird waits on the wire, a waiting bird hops into its nest, the wire reaches its last free perch. Each shows once per player (`fh.seen`), so rules are explained by what just happened rather than by text up front.
+- The open nest shows its count (1/3) and the first "Up next" nest is ringed, so the current target and the order are readable at a glance.
+- The "wire is full" screen shows which birds were waiting and why: colours whose nest was not open or next in line, with one suggestion for the retry.
+- The daily puzzle is introduced on level 7 (coach line). Before that its button has no "new" dot, so new players are not pulled into a mid-difficulty puzzle before they know the rules.
+- Levels 1–7 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in, boosters costing a star, the daily puzzle. The line stays visible at every supported size (compact on short screens such as 800×450 and 360×640).
 - No intro screen: new players land straight in level 1. The "How to play" card is in the menu. CrazyGames measures how many visitors play at least a minute, and every screen before play costs some of them.
 
 ## Feel
