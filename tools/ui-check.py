@@ -86,6 +86,23 @@ with sync_playwright() as p:
             check(f'{w}x{h} {opener}: every button reachable', not bad, bad)
         ctx.close()
 
+    # ---- level list: current level visible, no row half-clipped, overlay not scrolled ----
+    for (w, h) in [(320, 568), (800, 450), (821, 462), (1280, 720)]:
+        for (L, maxl) in [(1, 25), (6, 25), (12, 25), (25, 25), (60, 100), (100, 100)]:
+            ctx, page, errs = open_page(br, w, h, save(L, 0, maxl))
+            page.evaluate('showLevels()'); page.wait_for_timeout(80)
+            r = page.evaluate("""() => { const g = document.querySelector('.lvgrid'), gr = g.getBoundingClientRect();
+                const cut = [...g.querySelectorAll('.lvb')].filter(b => { const r = b.getBoundingClientRect();
+                    return r.bottom > gr.top + .5 && r.top < gr.bottom - .5 && (r.top < gr.top - .5 || r.bottom > gr.bottom + .5); });
+                const at = g.querySelector('.lvb[aria-current="true"]'), ar = at && at.getBoundingClientRect();
+                return {cut: cut.filter(b => b.getBoundingClientRect().top < gr.top).map(b => b.dataset.l),
+                        curVisible: !at || (ar.top >= gr.top - .5 && ar.bottom <= gr.bottom + .5),
+                        overlayTop: document.querySelector('.overlay').scrollTop}; }""")
+            check(f'regression: {w}x{h} levels L{L}/{maxl}: current level fully visible', r['curVisible'], r)
+            check(f'regression: {w}x{h} levels L{L}/{maxl}: no row clipped at the top', not r['cut'], r)
+            check(f'regression: {w}x{h} levels L{L}/{maxl}: overlay not scrolled', r['overlayTop'] == 0, r)
+            ctx.close()
+
     # ---- dialog isolates the game (keyboard and pointer) ----
     ctx, page, errs = open_page(br, 390, 844, save(6))
     page.evaluate('showMenu()')

@@ -893,8 +893,16 @@ function showLevels(){
     <button class="btn primary" id="lvClose">Back</button>`,true);
   card.querySelectorAll('.lvb').forEach(b=>b.onclick=()=>startLevel(+b.dataset.l));
   $('#lvClose').onclick=showMenu;
+  // Trim the grid to a whole number of rows and scroll only the grid (scrollIntoView would also
+  // scroll the overlay), in whole rows, so no row is ever half-clipped at the top.
+  const g=card.querySelector('.lvgrid');
   const at=card.querySelector('.lvb[aria-current="true"]')||card.querySelector('.lvb:last-child');
-  if(at)at.scrollIntoView({block:'center'});
+  if(g&&at&&g.scrollHeight>g.clientHeight){
+    const stride=at.offsetHeight+6,fit=Math.max(1,Math.floor((g.clientHeight+2)/stride));
+    g.style.maxHeight=(fit*stride-6)+'px';
+    const row=Math.floor((+at.dataset.l-1)/5);
+    if(row>=fit)g.scrollTop=(row-fit+(fit>2?2:1))*stride;
+  }
 }
 function showHow(){
   showOverlay(`<h2>How to play</h2><ul class="howto">
