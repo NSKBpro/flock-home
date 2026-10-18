@@ -191,3 +191,52 @@ test('re-measured: every pack level stays above the greedy floor and every Storm
     assert.ok(e.f >= 2, `Storm ${i + 1} needs only ${e.f} waiting bird(s)`);
   });
 });
+
+// ---------- eggs (ADR 0006) ----------
+test('an egg blocks like a bird and hatches when a nest of its colour is completed', () => {
+  // row 0: three colour-0 birds facing up (free); row 1: a colour-1 bird facing up, under an egg of colour 0
+  const lv = { R: 3, C: 3, cap: 5, open: 1, queue: [0, 1], birds: [
+    { r: 2, c: 0, d: 2, color: 0 }, { r: 2, c: 1, d: 2, color: 0 }, { r: 2, c: 2, d: 2, color: 0 },
+    { r: 1, c: 0, d: 0, color: 1 }, { r: 1, c: 1, d: 0, color: 1 }, { r: 1, c: 2, d: 0, color: 1 },
+  ], eggs: [{ r: 0, c: 1, color: 0 }] };
+  let s = E.initLite(lv);
+  assert.ok(!E.freeMoves(lv, s).includes(4), 'the bird under the egg is blocked');
+  assert.equal(E.rayBlocker(s.occ, 3, 3, 1, 1, 0), 6, 'the egg is the blocker (id = birds.length + k)');
+  s = E.applyLite(lv, s, 0); s = E.applyLite(lv, s, 1);
+  assert.ok(!E.freeMoves(lv, s).includes(4), 'still blocked before the colour-0 nest is full');
+  s = E.applyLite(lv, s, 2);
+  assert.ok(E.freeMoves(lv, s).includes(4), 'free once the colour-0 nest is completed');
+  for (const i of [3, 4, 5]) s = E.applyLite(lv, s, i);
+  assert.ok(E.isWon(s));
+});
+
+test('eggs survive encode/decode and mirroring', () => {
+  const lv = { R: 4, C: 5, cap: 5, open: 1, queue: [2, 3], birds: [{ r: 0, c: 0, d: 1, color: 2 }], eggs: [{ r: 3, c: 4, color: 3 }] };
+  const back = E.decodeLevel(E.encodeLevel(lv));
+  assert.deepEqual(back.eggs, lv.eggs);
+  assert.equal(E.decodeLevel(E.encodeLevel({ ...lv, eggs: undefined })).eggs, undefined, 'no eggs field when there are none');
+  const t = E.transformLevel(lv, true, true, [0, 1, 4, 5, 2, 3]);
+  assert.deepEqual(t.eggs, [{ r: 0, c: 0, color: 5 }]);
+});
+
+test('egg placement keeps the construction order winning and every egg blocks someone', () => {
+  let made = 0;
+  for (let seed = 1; made < 25 && seed < 400; seed++) {
+    const rand = E.rng(seed * 7717);
+    const lv = E.buildCandidate({ R: 7, C: 6, birds: 24, colors: 4, d: 2, block: 0.4, maxWire: 3, open: 1, eggs: 2 }, rand);
+    if (!lv) continue;
+    made++;
+    assert.ok(lv.eggs.length >= 1 && lv.eggs.length <= 2);
+    const onPath = (b, e) => { const [dr, dc] = E.DIRS[b.d];
+      for (let r = b.r + dr, c = b.c + dc; r >= 0 && r < lv.R && c >= 0 && c < lv.C; r += dr, c += dc) if (r === e.r && c === e.c) return true;
+      return false; };
+    for (const e of lv.eggs) {
+      assert.ok(lv.birds.some(b => onPath(b, e)), `seed ${seed}: an egg blocks nobody`);
+      assert.ok(lv.queue.includes(e.color));
+    }
+    assert.equal(new Set(lv.eggs.map(e => e.color)).size, lv.eggs.length, 'one egg per colour');
+    const path = E.solve(lv, E.initLite(lv), 200000);
+    assert.ok(path, `seed ${seed}: no winning order with eggs`);
+  }
+  assert.ok(made >= 25, `only ${made} candidates with eggs`);
+});

@@ -71,6 +71,9 @@ button{font:inherit;color:inherit}
 .cell{appearance:none;border:0;background:transparent;padding:0;position:relative;cursor:pointer;width:var(--cell);height:var(--cell)}
 .cell::before{content:"";position:absolute;inset:44%;border-radius:50%;background:var(--cell-dot)}
 .cell:disabled{cursor:default}
+.cell.has-egg::before{display:none}
+.egg{position:absolute;inset:4%;display:block;pointer-events:none}
+.egg svg{width:100%;height:100%;display:block;overflow:visible}
 .cell.hint::after{content:"";position:absolute;inset:3px;border-radius:50%;border:2.5px solid var(--accent);animation:pulse .9s ease-in-out 3}
 @keyframes pulse{50%{transform:scale(1.12);opacity:.4}}
 
@@ -174,6 +177,8 @@ button{font:inherit;color:inherit}
   .wear svg{width:40px;height:40px}.starrow svg{width:36px;height:36px}.newunlock svg{width:36px;height:36px}
   .lvb{height:44px}
 }
+/* very short portrait phones (320x568): a little less air so a 9-row board, the coach line and the tools all fit */
+@media (max-height:600px) and (max-aspect-ratio:5/4){.slot{height:70px}.seat{width:30px;height:30px}.wire{height:54px}.tool{height:46px}.tools{padding-block:6px 8px}.queue{margin-top:4px}.nest .bowl{width:116px;height:26px}}
 @media (max-height:400px) and (min-aspect-ratio:5/4){
   .slot{height:66px}.seat{width:30px;height:30px}.wire{height:52px}.tool{height:44px}.queue{margin-top:4px!important}.wire{margin-top:4px!important}
   .coach{margin:4px 0 4px!important}.nest .bowl{width:110px;height:25px}
@@ -273,6 +278,14 @@ function birdSVG(ci,acc=wear){
   ${acc?ACC_SVG[acc]||'':''}
 </svg>`;
 }
+// Egg (ADR 0006): the colour of the nest that hatches it, a cream outline so it never reads as a bird,
+// the colour's symbol for colour-blind players, and a crack that shows while hatching.
+const EGG=ci=>{const p=PAL[ci];return `<svg viewBox="0 0 40 40" aria-hidden="true">
+  <path d="M20 3.5C12.6 3.5 7.8 14.6 7.8 23a12.2 12.2 0 0 0 24.4 0C32.2 14.6 27.4 3.5 20 3.5Z" fill="${p.hex}" stroke="#F4EFE6" stroke-width="1.8"/>
+  <g fill="${p.dark}" opacity=".6"><circle cx="14" cy="15" r="1.6"/><circle cx="25.5" cy="12.5" r="1.3"/><circle cx="27.5" cy="28" r="1.7"/><circle cx="12.6" cy="29" r="1.2"/></g>
+  <g transform="translate(15.2 19.4) scale(.96)">${sym(p.sym,INK)}</g>
+  <path class="crack" d="M9 20.5l5 3.2 4-4 4.2 4 4.6-3.4 4 2.6" fill="none" stroke="#16110C" stroke-width="1.5" stroke-linejoin="round" opacity="0"/>
+</svg>`};
 /* ---------- accessories, unlocked with stars ----------
    Drawn in the bird's own 40×40 space (head centre 27.6,15.4, radius 7.2). */
 const ACC=[
@@ -313,6 +326,7 @@ const sfx={
   chirp(c){const f=[1180,1320,1480,1580,1760,1980][c];tone(f,f*1.45,.08,'sine',.09);tone(f*1.15,f*1.7,.07,'sine',.06,.08)},
   bonk(){tone(170,95,.13,'triangle',.16)},
   hop(){tone(760,1020,.07,'sine',.06)},
+  crack(){tone(1300,700,.05,'square',.04);tone(1700,1100,.06,'triangle',.05,.06)},
   nest(){[784,988,1175].forEach((f,i)=>tone(f,f*1.01,.16,'triangle',.08,i*.07))},
   win(){[523,659,784,1047].forEach((f,i)=>tone(f,f,.24,'triangle',.09,i*.11))},
   fail(){[440,370,294].forEach((f,i)=>tone(f,f*.97,.26,'triangle',.08,i*.15))},
@@ -363,7 +377,9 @@ const COACH={
   5:'Waiting birds hop into their nest as soon as it arrives.',
   6:'From here on, <b>Undo, Hint and +1 Perch cost a star</b>. Levels 1–5 were practice.',
   7:'New: a <b>daily puzzle</b>, the same for everyone. Find it on the calendar button.',
+  12:'New: <b>eggs</b>. They block the way like birds, and hatch when the nest of their colour is full.',
 };
+const EGG_INTRO='<b>Eggs</b> block the way like birds, and hatch when the nest of their colour is full.';
 // The campaign run is parked while the player visits the daily puzzle and restored exactly on the
 // way back (board, nests, wire, boosters, undo history, star conditions). Not kept across reloads.
 let parked=null;
@@ -404,12 +420,14 @@ function setupLevel(lv){
      wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0,usedBooster:false,usedRewardedAd:false};
   runId++;
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
+  (lv.eggs||[]).forEach((e,k)=>G.occ[e.r*lv.C+e.c]=G.birds.length+k);   // eggs block like birds (ADR 0006)
   locked=false;over=false;flights=0;
   const isDaily=mode==='daily';
   $('#lvlLabel').textContent=isDaily?'Daily':'Level';$('#lvlNum').textContent=isDaily?dayLabel(lv.day,'short'):L;
   $('#lvlLabel').parentElement.classList.toggle('is-daily',isDaily);$('#boss').hidden=!lv.boss||isDaily;
   $('#coach').innerHTML=isDaily?'Today’s puzzle. Same for everyone, new one tomorrow.':(COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':''));
   $('#coach').classList.toggle('teach',!isDaily&&!!COACH[L]);$('#coach').classList.remove('tip');
+  if(lv.eggs&&lv.eggs.length){if(!isDaily&&L===12){seen.eggs=1;store.set('fh.seen',seen)}else tipOnce('eggs',EGG_INTRO)}
   stage.innerHTML='';
   G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
   buildGrid();renderNests();renderQueue();buildWire();updateTools();paintTotal();paintDaily();
@@ -421,8 +439,21 @@ function buildGrid(){
   const {R,C}=G.lv;gridEl.innerHTML='';
   gridEl.style.gridTemplateColumns=`repeat(${C},var(--cell))`;
   for(let i=0;i<R*C;i++){const b=document.createElement('button');b.className='cell';b.dataset.i=i;gridEl.appendChild(b)}
+  renderEggs();
   for(let i=0;i<R*C;i++)cellAria(i);
   sizeGrid();
+}
+const isEgg=id=>id>=G.birds.length;
+const eggOf=id=>G.lv.eggs[id-G.birds.length];
+// Draw every egg still in G.occ, and remove eggs that have hatched (also used after Undo).
+function renderEggs(){
+  (G.lv.eggs||[]).forEach((e,k)=>{
+    const i=e.r*G.lv.C+e.c,cell=gridEl.children[i],alive=G.occ[i]===G.birds.length+k;
+    let el=cell.querySelector('.egg');
+    if(alive&&!el){el=document.createElement('span');el.className='egg';el.innerHTML=EGG(e.color);cell.appendChild(el)}
+    if(!alive&&el)el.remove();
+    cell.classList.toggle('has-egg',alive);
+  });
 }
 function sizeGrid(){
   const {R,C}=G.lv,fr=fieldEl.getBoundingClientRect();
@@ -432,6 +463,7 @@ function sizeGrid(){
 function cellAria(i){
   const el=gridEl.children[i],id=G.occ[i];
   if(id<0){el.disabled=true;el.removeAttribute('aria-label');el.tabIndex=-1;return}
+  if(isEgg(id)){const n=PAL[eggOf(id).color].name;el.disabled=true;el.tabIndex=-1;el.setAttribute('aria-label',`${n} egg, hatches when the ${n.toLowerCase()} nest is full`);return}
   const b=G.birds[id];el.disabled=false;el.tabIndex=0;el.setAttribute('aria-label',`${PAL[b.color].name} bird facing ${DIRNAME[b.d]}`);
 }
 function renderNests(){
@@ -526,10 +558,13 @@ const srEl=$('#sr');let srT=null;
 function say(msg){clearTimeout(srT);srEl.textContent='';srT=setTimeout(()=>srEl.textContent=msg,30)}
 async function tapCell(i){
   if(over||locked||!G||!overlay.hidden)return;
-  const id=G.occ[i];if(id<0)return;
+  const id=G.occ[i];if(id<0||isEgg(id))return;
   const b=G.birds[id],bl=rayBlocker(G.occ,G.lv.R,G.lv.C,b.r,b.c,b.d);
-  if(bl>=0){if(handEl&&level===1&&mode==='level'&&!seen.blocked)G.teachBlock=bl;
-    blockedFx(b,G.birds[bl]);tipOnce('blocked',`Blocked: the <b>${PAL[G.birds[bl].color].name.toLowerCase()} bird</b> is in its way. Free that one first.`);updateHand();return}
+  if(bl>=0){
+    if(isEgg(bl)){const n=PAL[eggOf(bl).color].name.toLowerCase();blockedFx(b,bl);
+      tipOnce('blockedEgg',`Blocked by the <b>${n} egg</b>. It hatches when the ${n} nest is full.`);return}
+    if(handEl&&level===1&&mode==='level'&&!seen.blocked)G.teachBlock=bl;
+    blockedFx(b,bl);tipOnce('blocked',`Blocked: the <b>${PAL[G.birds[bl].color].name.toLowerCase()} bird</b> is in its way. Free that one first.`);updateHand();return}
   pushUndo();G.moves++;
   const via=exitPoint(b),run=runId,hadFocus=document.activeElement===gridEl.children[i];
   G.occ[i]=-1;cellAria(i);if(hadFocus)focusNear(b.r,b.c);
@@ -551,7 +586,30 @@ async function tapCell(i){
   b.el.classList.remove('flying');flights--;
   if(full){await completeNest(ni,run);if(run!==runId)return;locked=false}
   if(wireFull){if(G.wire.length>=G.cap){await sleep(T(160));if(run!==runId)return;showFail();return}locked=false}
-  checkWin();updateHand();
+  checkWin();updateHand();checkStuck();
+}
+// Dead end (only possible with eggs): birds remain on the grid and none can move. Checked only when
+// nothing is in motion: while another bird is still flying or a nest is completing, the state is
+// in between moves (e.g. the last bird is on its way into the nest and the grid is already empty).
+function checkStuck(){
+  if(over||locked||flights>0||!G.lv.eggs||!G.lv.eggs.length)return;
+  if(!G.birds.some(b=>b.loc.t==='grid'))return;
+  if(!freeMoves({...G.lv,cap:G.cap},liteFromG()).length)showStuck();
+}
+// A nest of this colour was completed: its eggs hatch (same moment as hatch() in the engine).
+function hatchEggs(color){
+  (G.lv.eggs||[]).forEach((e,k)=>{
+    const i=e.r*G.lv.C+e.c,id=G.birds.length+k;
+    if(e.color!==color||G.occ[i]!==id)return;
+    G.occ[i]=-1;cellAria(i);gridEl.children[i].classList.remove('has-egg');
+    const el=gridEl.children[i].querySelector('.egg');if(!el)return;
+    sfx.crack();
+    const n=PAL[color].name.toLowerCase();say(`The ${n} egg hatched`);
+    tipOnce('hatch',`The ${n} nest is full, so the <b>${n} egg hatched</b> and cleared the way.`);
+    if(RM){el.remove();return}
+    el.querySelector('.crack').setAttribute('opacity','1');
+    el.animate([{transform:'none',opacity:1},{transform:'rotate(-8deg)',opacity:1,offset:.25},{transform:'rotate(8deg)',opacity:1,offset:.5},{transform:'scale(1.25)',opacity:0}],{duration:520,easing:'ease-in'}).finished.then(()=>el.remove(),()=>el.remove());
+  });
 }
 async function completeNest(ni,run=runId){
   await sleep(T(130));if(run!==runId)return;
@@ -564,6 +622,7 @@ async function completeNest(ni,run=runId){
   await Promise.all(anims.map(a=>a.finished.catch(()=>{})));
   if(run!==runId)return;
   birds.forEach(b=>{b.loc={t:'gone'};b.el.getAnimations().forEach(a=>a.cancel());b.el.classList.remove('flying');b.el.hidden=true});
+  hatchEggs(n.c);
   G.nests[ni]=G.qi<G.lv.queue.length?{c:G.lv.queue[G.qi++],filled:[]}:null;
   say(G.nests[ni]?`Nest full. Next nest: ${PAL[G.nests[ni].c].name}`:'Nest full');
   renderNest(ni);renderQueue();
@@ -591,11 +650,20 @@ function checkWin(){
   if(over||!G.birds.every(b=>b.loc.t==='gone'))return;
   const run=runId;over=true;sfx.win();buzz([20,60,20,60,40]);feathers();setTimeout(()=>{if(run===runId)showWin()},T(650));
 }
-function blockedFx(b,blk){
-  ensureAudio();sfx.bonk();buzz(25);say(`Blocked by the ${PAL[blk.color].name} bird`);
+function blockedFx(b,bl){
+  const egg=isEgg(bl),e=egg?eggOf(bl):null,blk=egg?null:G.birds[bl];
+  ensureAudio();sfx.bonk();buzz(25);say(`Blocked by the ${PAL[egg?e.color:blk.color].name} ${egg?'egg':'bird'}`);
   if(!RM)b.el.animate([{transform:'none'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(-2px)'},{transform:'none'}],{duration:280});
-  blk.el.animate([{transform:'none'},{transform:`translate(${blk.el.offsetWidth*.04}px,${blk.el.offsetWidth*.04}px) scale(.92)`},{transform:'none'}],{duration:280});
-  const a=center(b),c=center(blk),ln=document.createElement('div');ln.className='lane';
+  let c;
+  if(egg){
+    const cell=gridEl.children[e.r*G.lv.C+e.c],r=cell.getBoundingClientRect(),sr=stage.getBoundingClientRect();
+    c={x:r.left-sr.left+r.width/2,y:r.top-sr.top+r.height/2};
+    const el=cell.querySelector('.egg');if(el)el.animate([{transform:'none'},{transform:'rotate(-10deg)'},{transform:'rotate(8deg)'},{transform:'none'}],{duration:320});
+  }else{
+    blk.el.animate([{transform:'none'},{transform:`translate(${blk.el.offsetWidth*.04}px,${blk.el.offsetWidth*.04}px) scale(.92)`},{transform:'none'}],{duration:280});
+    c=center(blk);
+  }
+  const a=center(b),ln=document.createElement('div');ln.className='lane';
   if(Math.abs(a.x-c.x)>1){ln.style.left=Math.min(a.x,c.x)+'px';ln.style.top=(a.y-2)+'px';ln.style.width=Math.abs(a.x-c.x)+'px';ln.style.height='4px'}
   else{ln.style.left=(a.x-2)+'px';ln.style.top=Math.min(a.y,c.y)+'px';ln.style.height=Math.abs(a.y-c.y)+'px';ln.style.width='4px'}
   stage.insertBefore(ln,stage.firstChild);
@@ -631,7 +699,7 @@ function doUndo(){
 function restore(json,animate=true){
   const s=JSON.parse(json);
   G.birds.forEach((b,i)=>b.loc=s.locs[i]);G.occ=Int16Array.from(s.occ);G.nests=s.nests;G.qi=s.qi;G.wire=s.wire;G.peak=s.peak??G.peak;
-  renderNests();renderQueue();for(let i=0;i<G.occ.length;i++)cellAria(i);
+  renderNests();renderQueue();renderEggs();for(let i=0;i<G.occ.length;i++)cellAria(i);
   G.birds.forEach(b=>setBird(b,animate,null,300));updateWireState();updateTools();updateHand();
 }
 function liteFromG(){
@@ -752,6 +820,20 @@ function showFail(){
   if(canGo)$('#contBtn').onclick=()=>{const go=()=>{if(Ads.enabled)G.usedRewardedAd=true;hideOverlay();G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!')};Ads.enabled?Ads.rewarded('continue',go):go()};
   $('#retryBtn').onclick=()=>mode==='daily'?startDaily():startLevel(level);
 }
+// Eggs make a new dead end possible: every bird left is blocked (by eggs or by birds behind them),
+// so nothing can move. More perches cannot help, so this offers Undo instead of Keep going.
+function showStuck(){
+  over=true;sfx.fail();buzz(120);hideHand();
+  const isDaily=mode==='daily',canUndo=G.undo.length>0&&G.tools.undo>0;
+  showOverlay(`<span class="eyebrow">${isDaily?'Daily puzzle':`Level ${level}`}</span><h2>No bird can fly</h2>
+    <p>Every bird left is blocked, so nothing can move. Eggs only hatch when the nest of their colour is full, so free those birds first.</p>
+    ${canUndo?`<button class="btn primary" id="stUndo">Undo last move</button>`:''}
+    <button class="btn ${canUndo?'ghost':'primary'}" id="retryBtn">Try again</button>
+    ${isDaily?`<button class="btn ghost" id="backLvlBtn">Back to level ${level}</button>`:''}`);
+  if(canUndo)$('#stUndo').onclick=()=>{hideOverlay();over=false;doUndo()};
+  if(isDaily)$('#backLvlBtn').onclick=backToLevel;
+  $('#retryBtn').onclick=()=>mode==='daily'?startDaily():startLevel(level);
+}
 function equip(id){
   wear=id;store.set('fh.wear',wear);
   if(G)G.birds.forEach(b=>{const bi=b.el.querySelector('.bi');if(bi)bi.innerHTML=birdSVG(b.color)});
@@ -839,7 +921,7 @@ function handTarget(){
     let pick=null;
     for(const b of G.birds){
       if(b.loc.t!=='grid')continue;
-      const bl=rayBlocker(G.occ,lv.R,lv.C,b.r,b.c,b.d);if(bl<0)continue;
+      const bl=rayBlocker(G.occ,lv.R,lv.C,b.r,b.c,b.d);if(bl<0||isEgg(bl))continue;
       const k=G.birds[bl];if(rayBlocker(G.occ,lv.R,lv.C,k.r,k.c,k.d)>=0)continue;
       if(pick==null||(open&&k.color===open.c))pick=b.id;
       if(open&&k.color===open.c)break;
