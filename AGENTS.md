@@ -13,7 +13,8 @@ npm test           # must pass before every commit
 npm run build      # must succeed before every commit; output goes to dist/ (not committed)
 npm run sim 1 40   # forced wire use and bot win rates per level; run after any change to rules or levels
 npm run levels     # regenerate src/levels.js after changing rules or the difficulty targets
-npm run covers     # re-render cover images (needs `npm install` + Python Playwright)
+npm run covers     # re-render cover images (needs Python Playwright)
+npm run video      # re-record the preview videos (needs a build, Python Playwright and ffmpeg)
 ```
 
 ## Architecture rules
@@ -21,9 +22,9 @@ npm run covers     # re-render cover images (needs `npm install` + Python Playwr
 1. **`src/engine.js` is pure.** No DOM, no `window`, no timers, no `Math.random()`. Randomness only through `rng(seed)`. It must run unchanged in Node (tests, tools) and in the browser (inlined by the build).
 2. **Levels are deterministic.** The same level number always produces the same level. Tests check this; never break it, because players compare levels and bug reports cite level numbers.
 3. **Every level must be solvable.** Generation builds levels so that a known winning order exists (see [ADR 0003](docs/adr/0003-solvable-by-construction.md)). The shipped levels are the curated pack in `src/levels.js` ([ADR 0005](docs/adr/0005-one-open-nest-and-curated-pack.md)); tests verify a winning order for every pack level. Never hand-edit `src/levels.js`; change the targets in `tools/gen-levels.mjs` and regenerate.
-4. **One shipped file.** The game ships as a single HTML file with no runtime network requests except Google Fonts and, later, the CrazyGames SDK ([ADR 0002](docs/adr/0002-single-file-vanilla-js.md)). Do not add frameworks, bundlers or npm runtime dependencies.
+4. **One shipped file.** The game ships as a single HTML file with no runtime network requests (fonts are inlined from `assets/fonts/`); the only future exception is the CrazyGames SDK ([ADR 0002](docs/adr/0002-single-file-vanilla-js.md)). Do not add frameworks, bundlers or npm dependencies.
 5. **`src/game.html` owns presentation only.** Game rules live in the engine. The page keeps its own richer state for animation, but the outcome of a move must match `applyLite` in the engine.
-6. **Ads only at natural breaks.** Rewarded ads are opt-in (boosters, continue after a full wire). Interstitials only between levels. Never interrupt active play. These are CrazyGames requirements, not preferences ([ADR 0004](docs/adr/0004-monetization-model.md)).
+6. **Ads only at natural breaks, and only through `Ads`.** Rewarded ads are opt-in (boosters, continue after a full wire). Interstitials only between levels. Never interrupt active play. Every ad call goes through the `Ads` object in `src/game.html`; it is disabled until Full Launch, and nothing may imitate an ad while it is ([ADR 0004](docs/adr/0004-monetization-model.md)).
 
 ## Conventions
 

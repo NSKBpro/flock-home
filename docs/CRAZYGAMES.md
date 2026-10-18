@@ -4,11 +4,11 @@ Requirements as of October 2026, from the [CrazyGames developer docs](https://do
 
 ## Build
 
-- [ ] Upload `dist/index.html` (HTML5). Initial download ≤ 50 MB, total ≤ 250 MB, ≤ 1,500 files. We are at about 66 KB.
-- [ ] Works in a responsive 16:9 iframe and is legible at devicePixelRatio 1 (desktop) as well as on phones.
-- [ ] Movement uses time, not frame count, so it behaves the same at 60, 144 and 165 Hz.
-- [ ] No console errors. No failed network requests.
-- [ ] Content suitable for PEGI 12 / age 13+.
+- [x] Single file `dist/index.html` (HTML5). Initial download ≤ 50 MB, total ≤ 250 MB, ≤ 1,500 files. We are at about 150 KB, one file.
+- [x] Works in a responsive 16:9 iframe (two-column layout on wide screens) and is legible at devicePixelRatio 1 as well as on phones. Checked at 360×640, 390×844, 800×600, 1024×576, 1280×720 and 1920×1080.
+- [x] Movement uses time, not frame count (Web Animations and timers only), so it behaves the same at 60, 144 and 165 Hz.
+- [x] No console errors. No network requests at all (fonts are inlined).
+- [x] Content suitable for PEGI 12 / age 13+ (no violence, no text chat, no user content).
 - [ ] Tested in the CrazyGames QA tool before submitting.
 
 ## Covers (all three required)
@@ -21,17 +21,17 @@ Rules: no borders, no text except the title, no icons or store logos, nothing co
 
 ## Preview videos (both required)
 
-- [ ] Landscape 1080p 16:9 and portrait 1080p 2:3
-- [ ] 15–20 seconds (longer gets cut), ≤ 50 MB, **no sound**
-- [ ] First frame is the static cover
-- [ ] Real gameplay at normal speed; no black screens, logo intros, black bars, default mouse cursor, "Play Now" text or social icons
+- [x] Landscape 1920×1080 (16:9) — `assets/videos/flock-home-preview-landscape-1920x1080.mp4`
+- [x] Portrait 1080×1620 (2:3) — `assets/videos/flock-home-preview-portrait-1080x1620.mp4`
+- [x] 19 seconds, under 1 MB each, H.264, **no audio track**
+- [x] First second is the static cover
+- [x] Real gameplay at normal speed (level 6, played by the hint solver); no black screens, logo intros, black bars, mouse cursor, "Play Now" text or social icons
 
-Make these after Milestone 1, so they show the finished gameplay.
+Re-record with `npm run build && npm run video` after visible gameplay changes.
 
 ## Store page text
 
-- [ ] Description (what it is, what makes it different, 2–4 short paragraphs)
-- [ ] Controls: "Tap or click a bird to make it fly. Keyboard: Tab to a bird, Enter to fly."
+- [x] Description, controls and tags: [STORE_PAGE.md](STORE_PAGE.md)
 
 ## Launch stages
 

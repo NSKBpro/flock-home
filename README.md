@@ -8,14 +8,15 @@ The first target is [CrazyGames](https://www.crazygames.com/). See [docs/ROADMAP
 
 ## Run it
 
-No build tools or frameworks are needed: the game is one HTML file.
+No frameworks or npm packages: Node runs the build and tests, and the game is one HTML file.
 
 ```bash
-npm install        # only needed for the cover font
 npm test           # engine tests (node:test)
 npm run build      # writes dist/index.html (upload this) and dist/artifact.html
 npm run sim 1 40   # difficulty report for levels 1–40
 npm run levels     # regenerate the curated level pack (about 2 minutes)
+npm run covers     # re-render cover images (Python Playwright)
+npm run video      # re-record preview videos (after a build; Python Playwright + ffmpeg)
 ```
 
 Open `dist/index.html` in a browser to play.
@@ -31,9 +32,12 @@ Open `dist/index.html` in a browser to play.
 | `tools/gen-levels.mjs` | Builds the curated level pack against the difficulty curve. |
 | `tools/sim.mjs` | Plays the shipped levels with simple bots and prints forced wire use and win rates. |
 | `tools/covers/` | Cover image source (`cover.html`) and renderer (`render.py`). |
+| `tools/video/` | Records the CrazyGames preview videos from the real game (`record.py`). |
 | `tests/` | Engine tests. |
 | `assets/covers/` | Rendered cover images for the CrazyGames submission. |
-| `docs/` | Roadmap, game design, market research, CrazyGames checklist, and architecture decisions (`docs/adr/`). |
+| `assets/videos/` | Preview videos for the CrazyGames submission. |
+| `assets/fonts/` | Sniglet and Figtree (SIL Open Font License), inlined into the build. |
+| `docs/` | Roadmap, game design, market research, CrazyGames checklist, store page text, and architecture decisions (`docs/adr/`). |
 
 ## For AI agents
 

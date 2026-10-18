@@ -11,6 +11,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [x] Boosters: Undo, Hint, +1 Perch
 - [x] Ad placeholders: rewarded boosters, continue after a full wire, interstitial every 3 levels
 - [x] Make the wire matter: one open nest, 100 curated levels with measured difficulty and a sawtooth curve ([ADR 0005](adr/0005-one-open-nest-and-curated-pack.md))
+- [x] Stars per level, tutorial hand on level 1, vibration feedback
 - [ ] Owner plays 10–15 levels and writes down what feels boring or unfair
 - [ ] 3–5 friends play on their phones; note where they stop
 - **Done when:** testers ask for "one more level" without being prompted
@@ -18,10 +19,11 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 ## Milestone 2 — Ready to submit
 
 - [x] Three cover images (landscape, portrait, square)
-- [ ] Two preview videos, 15–20 s, landscape 16:9 and portrait 2:3, no sound, cover as first frame
-- [ ] Game description and controls text for the CrazyGames page
-- [ ] Pass the CrazyGames QA tool locally (load size, 16:9 iframe, high-refresh screens, no console errors)
-- [ ] Remove placeholder "Remove ads" toggle from the menu (no purchases at Basic Launch)
+- [x] Two preview videos, 19 s, landscape 16:9 and portrait 2:3, no sound, cover as first frame (`npm run video`)
+- [x] Game description and controls text for the CrazyGames page ([STORE_PAGE.md](STORE_PAGE.md))
+- [x] Local technical checks: wide 16:9 layout, no overflow from 360×640 to 1920×1080, keyboard play, no console errors, no external requests, time-based animation
+- [ ] Pass the CrazyGames QA tool (needs the developer account)
+- [x] Remove placeholder ads and the "Remove ads" toggle (no ads or purchases at Basic Launch)
 - **Done when:** everything in [CRAZYGAMES.md](CRAZYGAMES.md) is ticked
 
 ## Milestone 3 — Basic Launch
