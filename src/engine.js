@@ -275,14 +275,18 @@ function levelFor(L, pack) {
 // Daily puzzle for a given day number (days since 1970-01-01 in the player's local time).
 // Everyone gets the same puzzle on the same date: a mid-difficulty pack level (no Storms),
 // mirrored and recoloured by the day, so it is solvable and never looks like a level they played.
+// Base levels are dealt from a shuffled deck per cycle of pool.length days, so no base level
+// repeats within a cycle (random picks with replacement repeated about 5 times a month).
 function dailyLevel(day, pack) {
   const pool = [];
   for (let i = 14; i < Math.min(80, pack.length); i++) if (!pack[i].boss) pool.push(i);
+  const cycle = Math.floor(day / pool.length);
+  const deck = shuffle(pool.slice(), rng(cycle * 2654435761 + 40503));
+  const base = deck[day - cycle * pool.length];
   const rand = rng(day * 2246822519 + 3266489917);
-  const e = pack[pool[Math.floor(rand() * pool.length)]];
   const perm = shuffle([...Array(PALN).keys()], rand);
-  const lv = transformLevel(decodeLevel(e.s), rand() < 0.5, rand() < 0.5, perm);
-  return { ...lv, L: 0, day, daily: true, boss: false };
+  const lv = transformLevel(decodeLevel(pack[base].s), rand() < 0.5, rand() < 0.5, perm);
+  return { ...lv, L: 0, day, daily: true, boss: false, base: base + 1 };
 }
 
 if (typeof module !== 'undefined') module.exports = {

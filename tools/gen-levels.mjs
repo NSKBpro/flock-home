@@ -36,7 +36,9 @@ function spec(L) {
   const gTop = [85, 75, 65, 58, 52][tier];
   const g = storm ? Math.max(20, gTop - 35) : breather ? Math.min(95, gTop + 10) : Math.max(25, gTop - 3 * climb);
   const f = storm ? 3 : breather ? 1 : climb >= 2 ? 2 : 1;
-  return { R, C, birds, colors, f, g, storm, tries: tier === 0 ? 120 : 70 };
+  // Storms get a wider search: candidates that force three waiting birds are rare.
+  const tries = storm ? 240 : tier === 0 ? 120 : 70;
+  return { R, C, birds, colors, f, g, storm, tries };
 }
 
 function measure(lv) {
@@ -49,11 +51,15 @@ for (let L = 1; L <= COUNT; L++) {
   const sp = spec(L);
   const rand = E.rng(L * 2654435761 + 99);
   let best = null, bestScore = Infinity, valid = 0;
+  // A Storm must be harder than the level before it (greedy win rate lower).
+  const prevG = sp.storm && pack.length ? pack[pack.length - 1].g : null;
   for (let attempt = 0; attempt < sp.tries * 8 && valid < sp.tries; attempt++) {
     const birds = Math.max(6, sp.birds + 3 * (Math.floor(rand() * 3) - 1) * (attempt % 3 === 0 ? 1 : 0));
+    // Storms shuffle colours further from the build order (radius up to 5), which is what makes
+    // three waiting birds unavoidable. maxWire stays 3, so three stars remain possible on a Storm.
     const p = {
       R: sp.R, C: sp.C, birds: Math.min(birds, Math.floor(sp.R * sp.C * 0.8 / 3) * 3), colors: sp.colors,
-      d: L <= 2 ? 0 : Math.floor(rand() * 4), block: [0, 0.4, 0.7][Math.floor(rand() * 3)], maxWire: 3, open: OPEN,
+      d: L <= 2 ? 0 : Math.floor(rand() * (sp.storm ? 6 : 4)), block: [0, 0.4, 0.7][Math.floor(rand() * 3)], maxWire: 3, open: OPEN,
     };
     const lv = E.buildCandidate(p, rand);
     if (!lv) continue;
@@ -63,7 +69,10 @@ for (let L = 1; L <= COUNT; L++) {
     // as much as "too easy" (frustration loses players faster than boredom); then size.
     const gap = m.g - sp.g;
     const score = 30 * Math.abs(m.f - sp.f) + (gap < 0 ? -2 * gap : gap) + 2 * Math.abs(lv.birds.length - sp.birds) / 3
-      + (m.g < 12 ? 200 : 0); // never ship a level the greedy bot almost never wins
+      // never ship a level the greedy bot almost never wins; Storms keep a margin above the 12% floor,
+      // because the measurement here uses fewer bot runs than npm run sim
+      + (m.g < (sp.storm ? 16 : 12) ? 200 : 0)
+      + (prevG != null && m.g >= prevG ? 40 + 2 * (m.g - prevG) : 0); // a Storm easier than the level before it
     if (score < bestScore) { bestScore = score; best = { lv, m }; }
     if (score < 4) break;
   }

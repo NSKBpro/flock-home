@@ -136,3 +136,13 @@ test('the daily puzzle is the same all day, changes day to day, and is always so
   }
   assert.ok(seen.size >= 25, `only ${seen.size} distinct puzzles in 30 days`);
 });
+
+test('the daily puzzle never repeats a base level within one cycle of the pool', () => {
+  const first = E.dailyLevel(0, LEVEL_PACK);
+  const pool = LEVEL_PACK.slice(14, 80).filter(e => !e.boss).length;
+  const start = Math.ceil(20380 / pool) * pool; // first day of a cycle
+  const bases = new Set();
+  for (let d = start; d < start + pool; d++) bases.add(E.dailyLevel(d, LEVEL_PACK).base);
+  assert.equal(bases.size, pool);
+  assert.ok(first.base >= 15 && first.base <= 80 && !LEVEL_PACK[first.base - 1].boss);
+});
