@@ -586,8 +586,15 @@ async function tapCell(i){
   b.el.classList.remove('flying');flights--;
   if(full){await completeNest(ni,run);if(run!==runId)return;locked=false}
   if(wireFull){if(G.wire.length>=G.cap){await sleep(T(160));if(run!==runId)return;showFail();return}locked=false}
-  checkWin();updateHand();
-  if(!over&&!freeMoves({...G.lv,cap:G.cap},liteFromG()).length)showStuck();   // only possible with eggs
+  checkWin();updateHand();checkStuck();
+}
+// Dead end (only possible with eggs): birds remain on the grid and none can move. Checked only when
+// nothing is in motion: while another bird is still flying or a nest is completing, the state is
+// in between moves (e.g. the last bird is on its way into the nest and the grid is already empty).
+function checkStuck(){
+  if(over||locked||flights>0||!G.lv.eggs||!G.lv.eggs.length)return;
+  if(!G.birds.some(b=>b.loc.t==='grid'))return;
+  if(!freeMoves({...G.lv,cap:G.cap},liteFromG()).length)showStuck();
 }
 // A nest of this colour was completed: its eggs hatch (same moment as hatch() in the engine).
 function hatchEggs(color){

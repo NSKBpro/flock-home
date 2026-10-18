@@ -159,6 +159,21 @@ with sync_playwright() as p:
     check('restart mid-flight: new level is clean', st == [0, False, 0, True], st)
     ctx.close()
 
+    # ---- quick final taps: the next-to-last bird is still flying when the last one lands ----
+    for L in (8, 12, 40):
+        ctx, page, errs = open_page(br, 390, 844, save(L), reduced=False)
+        r = page.evaluate("""async () => {
+          let stuck = 0; const orig = showStuck; showStuck = () => { stuck++; orig(); };
+          const lv = {...G.lv, cap: G.cap}, path = solve(lv, liteFromG(), 400000);
+          for (const m of path.slice(0, -2)) { const b = G.birds[m]; await tapCell(b.r * G.lv.C + b.c); }
+          const [a, c] = path.slice(-2).map(m => G.birds[m]);
+          tapCell(a.r * G.lv.C + a.c); await new Promise(r => setTimeout(r, 120)); tapCell(c.r * G.lv.C + c.c);
+          await new Promise(r => setTimeout(r, 2500));
+          if (!over) { const left = G.birds.find(b => b.loc.t === 'grid'); if (left) { await tapCell(left.r * G.lv.C + left.c); await new Promise(r => setTimeout(r, 2500)); } }
+          return { stuck, won: card.textContent.includes('The flock is home') } }""")
+        check(f'level {L}: quick last two taps end on the win screen, never "No bird can fly"', r['stuck'] == 0 and r['won'], r)
+        ctx.close()
+
     # ---- fail, then keep going ----
     ctx, page, errs = open_page(br, 390, 844, save(9))
     page.evaluate("""async () => { for (let k = 0; k < 40 && !over; k++) {
