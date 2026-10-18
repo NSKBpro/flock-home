@@ -43,7 +43,8 @@ At Full Launch, interstitial ads appear only between levels, from level 5 on, ev
 ## Daily puzzle
 
 - One puzzle per calendar day (the player's local midnight), the same for everyone. It is a mid-difficulty pack level (levels 15–80, no Storms), mirrored and recoloured by the date, so it is always solvable and looks new. Base levels are dealt from a shuffled deck, so none repeats until every pool level has been used (`dailyLevel` in the engine; tested).
-- While on the daily puzzle, the menu and the "wire is full" screen offer "Back to level N", so a player is never stuck in it.
+- While on the daily puzzle, the menu and the "wire is full" screen offer "Back to level N", so a player is never stuck in it. The level in progress is kept exactly as it was (board, wire, boosters, undo history) and restored on the way back; it is not kept across a page reload.
+- A puzzle counts for its own date: finishing yesterday's puzzle after midnight extends the streak for yesterday, and today's puzzle still shows as new. Solving a day twice changes nothing (`creditDaily` in the engine; tested).
 - Opened from the calendar button in the header, which shows a dot until today's puzzle is solved and a badge with the current streak.
 - Solving it extends the streak if yesterday's was solved, otherwise starts a new one at 1. The win screen shows the streak and "A new puzzle arrives at midnight".
 - Daily puzzles don't award level stars; the reward is the streak. Purpose: a reason to come back tomorrow (CrazyGames' day-1 retention metric).
@@ -66,7 +67,7 @@ The win screen says which star was missed and offers "Play again for 3 stars". S
 ## Onboarding
 
 - Level 1 shows an animated hand on the bird to tap (the hint solver's choice) until the player has freed two birds.
-- Levels 1–5 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in.
+- Levels 1–5 each have one line of coach text introducing one idea: blocking, the open nest, the wire, "Up next", waiting birds hopping in. The line stays visible at every supported size (compact on short screens such as 800×450 and 360×640).
 - No intro screen: new players land straight in level 1. The "How to play" card is in the menu. CrazyGames measures how many visitors play at least a minute, and every screen before play costs some of them.
 
 ## Feel
@@ -89,7 +90,7 @@ Levels follow a **sawtooth**: difficulty climbs over a few levels, then a hard "
 
 How difficulty is measured (`npm run sim`, and stored per level in `src/levels.js`):
 
-- **Forced wait (`f`):** the fewest perches the best possible play needs. 0 means the wire is never needed, which makes the wire meaningless.
+- **Forced wait (`f`):** an estimate of the fewest perches the best possible play needs (an upper bound: if the solver's search budget runs out it counts as "needs more"). 0 means the wire is never needed, which makes the wire meaningless.
 - **Greedy win rate (`g`):** a bot that always frees a bird of the open nest's colour when it can, otherwise a random bird. If it wins almost every time, the level has no real decisions.
 - **Casual win rate (`c`):** the same bot, but it only looks for a matching bird half the time.
 
@@ -105,7 +106,9 @@ Targets used by `tools/gen-levels.mjs` (re-tune after human playtesting):
 
 No level ships with a greedy win rate under 12%. From level 3 on, every level needs the wire at least once.
 
-Storms aim for forced wait 3, but with the construction capped at three waiting birds (so three stars stay possible) the generator often only finds 2; it prefers a Storm that is clearly harder than the level before it over one that hits forced wait 3 but plays easier. Storms keep a margin above the floor (16% in the generator's shorter measurement).
+The generator steers with quick 80-run estimates, then re-measures every candidate it would pick with 2,000 runs on separate seeds and enforces the hard limits on that number: greedy ≥ 12% (Storms ≥ 15%), and every Storm at least 3 points below the level before it with at least two forced waits. The `g` and `c` stored in `src/levels.js` are these validated values. Storms aim for forced wait 3, but with the construction capped at three waiting birds (so three stars stay possible) the generator usually finds 2.
+
+Bot rates are a tuning signal, not predicted human win rates. Human playtests decide whether these targets are right.
 
 The rule change from two open nests to one, and the reasons, are in [ADR 0005](adr/0005-one-open-nest-and-curated-pack.md).
 

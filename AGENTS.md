@@ -15,6 +15,7 @@ npm run sim 1 40   # forced wire use and bot win rates per level; run after any 
 npm run levels     # regenerate src/levels.js after changing rules or the difficulty targets
 npm run covers     # re-render cover images (needs Python Playwright)
 npm run video      # re-record the preview videos (needs a build, Python Playwright and ffmpeg)
+npm run ui         # browser regression checks on dist/index.html (needs a build and Python Playwright)
 ```
 
 ## Architecture rules
@@ -38,7 +39,7 @@ npm run video      # re-record the preview videos (needs a build, Python Playwri
 
 1. `npm test` and `npm run build` pass.
 2. For generation or rule changes: `npm run sim` and compare win rates with the targets in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md#difficulty-curve).
-3. For UI changes: open `dist/index.html` at phone width (≈390×844) and desktop; play a level to the win screen and one to the "wire is full" screen.
+3. For UI changes: `npm run build && npm run ui` must pass (layout at portal and phone sizes including late levels, dialogs, daily puzzle, undo, fail and continue, page-vs-engine parity). Then open `dist/index.html` at phone width (≈390×844) and desktop and play a level to the win screen and one to the "wire is full" screen.
 
 ## Documentation duties
 
