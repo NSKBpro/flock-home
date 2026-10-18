@@ -146,3 +146,48 @@ test('the daily puzzle never repeats a base level within one cycle of the pool',
   assert.equal(bases.size, pool);
   assert.ok(first.base >= 15 && first.base <= 80 && !LEVEL_PACK[first.base - 1].boss);
 });
+
+// ---------- hint solver status ----------
+test('solveStatus tells a proven dead end from a search that ran out of budget', () => {
+  const lv = E.levelFor(40, LEVEL_PACK);
+  assert.equal(E.solveStatus(lv, E.initLite(lv), 200000).status, 'solved');
+  assert.equal(E.solveStatus(lv, E.initLite(lv), 3).status, 'budget');
+  // dead end: one perch, and both free birds are the wrong colour for the open nest
+  const dead = { R: 1, C: 2, cap: 1, open: 1, queue: [0, 1], birds: [
+    { r: 0, c: 0, d: 3, color: 1 }, { r: 0, c: 1, d: 1, color: 1 }] };
+  const st = E.solveStatus(dead, E.initLite(dead), 1000);
+  assert.equal(st.status, 'unsolvable');
+  assert.equal(E.solve(dead, E.initLite(dead), 1000), null);
+});
+
+// ---------- daily streak ----------
+test('daily streak credits the puzzle day, survives midnight, and is idempotent', () => {
+  const D = 20744; // 18 Oct 2026
+  let d = E.creditDaily({}, D);
+  assert.deepEqual([d.last, d.streak, d.top], [D, 1, 1]);
+  assert.deepEqual(E.creditDaily(d, D), d, 'solving the same day again changes nothing');
+  d = E.creditDaily(d, D + 1);
+  assert.deepEqual([d.last, d.streak], [D + 1, 2]);
+  // yesterday's puzzle finished after midnight: credited to yesterday, not today
+  const late = E.creditDaily({ last: D - 1, streak: 3, top: 3 }, D);
+  assert.equal(late.last, D); assert.equal(late.streak, 4);
+  assert.deepEqual(E.creditDaily(late, D - 1), late, 'an older puzzle never moves the streak back');
+  // a missed day starts over
+  d = E.creditDaily({ last: D - 2, streak: 5, top: 5 }, D);
+  assert.deepEqual([d.streak, d.top], [1, 5]);
+  // shown streak: alive today and tomorrow, gone after a missed day
+  assert.equal(E.liveStreakOn({ last: D, streak: 4 }, D), 4);
+  assert.equal(E.liveStreakOn({ last: D, streak: 4 }, D + 1), 4);
+  assert.equal(E.liveStreakOn({ last: D, streak: 4 }, D + 2), 0);
+});
+
+// ---------- difficulty claims, re-measured from the encoded levels (not the stored numbers) ----------
+test('re-measured: every pack level stays above the greedy floor and every Storm is harder than the level before', () => {
+  const g = LEVEL_PACK.map((e, i) => E.botWinRate(E.levelFor(i + 1, LEVEL_PACK), 1, 800, 271828));
+  g.forEach((v, i) => assert.ok(v >= 12, `level ${i + 1}: greedy ${v}% on an independent sample`));
+  LEVEL_PACK.forEach((e, i) => {
+    if (!e.boss || i === 0) return;
+    assert.ok(g[i] < g[i - 1], `Storm ${i + 1} (${g[i]}%) is not harder than level ${i} (${g[i - 1]}%)`);
+    assert.ok(e.f >= 2, `Storm ${i + 1} needs only ${e.f} waiting bird(s)`);
+  });
+});

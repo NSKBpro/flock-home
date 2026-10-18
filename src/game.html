@@ -1,6 +1,7 @@
 <title>Flock Home</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+[hidden]{display:none!important}
 /*FONTS*/
 /* Layout: one phone-shaped column, sky on top (nest, then the wire), the roost grid below, tools at the bottom.
    Wide screens (desktop, 16:9 portal frames): two columns, controls left and the roost right. */
@@ -17,19 +18,19 @@ html,body{height:100%}
 body{background:linear-gradient(180deg,var(--sky-top),var(--sky-bot) 55%,var(--sky-end));color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#app{position:relative;box-sizing:border-box;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow:hidden}
+#app{position:relative;box-sizing:border-box;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overflow:hidden}
 .stars{position:absolute;inset:0 0 auto 0;height:260px;pointer-events:none;opacity:.55;background:
   radial-gradient(1.2px 1.2px at 12% 18%,var(--ink),transparent 60%),radial-gradient(1px 1px at 33% 8%,var(--ink),transparent 60%),
   radial-gradient(1.4px 1.4px at 58% 22%,var(--ink),transparent 60%),radial-gradient(1px 1px at 72% 6%,var(--ink),transparent 60%),
   radial-gradient(1px 1px at 88% 30%,var(--ink),transparent 60%),radial-gradient(1.2px 1.2px at 46% 40%,var(--ink),transparent 60%)}
 .moon{position:absolute;left:62%;top:18px;width:22px;height:22px;border-radius:50%;box-shadow:-6px 3px 0 0 #F6E7B8;opacity:.8;pointer-events:none}
 
-.top{display:flex;align-items:center;justify-content:space-between;padding-block:10px 2px;position:relative;z-index:2}
-.lvl{display:flex;align-items:baseline;gap:8px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:10px 2px;position:relative;z-index:2}
+.lvl{display:flex;align-items:baseline;gap:8px;min-width:0}
 .lvl small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .lvl b{font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
 .lvl .boss{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);padding:2px 7px;border-radius:99px;align-self:center}
-.icons{display:flex;gap:8px}
+.icons{display:flex;gap:8px;flex:none}
 .ibtn{width:40px;height:40px;border-radius:12px;border:0;background:var(--panel);display:grid;place-items:center;cursor:pointer}
 .ibtn svg{width:20px;height:20px}
 .coach{font-size:13px;line-height:1.35;color:var(--muted);text-align:center;min-height:18px;margin:2px 0 8px;text-wrap:balance}
@@ -45,8 +46,8 @@ button{font:inherit;color:inherit}
 .nest .tag svg{width:10px;height:10px}
 .slot .done{position:absolute;inset:0;border-radius:18px;border:1.5px dashed var(--cell-dot);display:grid;place-items:center;color:var(--muted);font-size:12px}
 .queue{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;min-height:18px}
-.chip{width:16px;height:16px;border-radius:50%;display:grid;place-items:center}
-.chip svg{width:8px;height:8px}
+.chip{width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
+.chip svg{width:11px;height:11px}
 .more{letter-spacing:0;text-transform:none;font-weight:600}
 
 .wire{position:relative;height:78px;margin-top:2px}
@@ -147,8 +148,9 @@ button{font:inherit;color:inherit}
 .howto span{width:22px;height:22px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-weight:700;font-size:12px;color:var(--accent)}
 .toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--line);font-weight:700;font-size:14px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.bird.flying .wing,.cell.hint::after,.hand,.ripple{animation:none}.bi{transition:none}}
-@media (max-height:640px){.slot{height:80px}.seat{width:34px;height:34px}.wire{height:64px}.tool{height:50px}.coach{display:none}}
-@media (min-width:760px) and (min-aspect-ratio:5/4){
+@media (max-height:640px){.slot{height:80px}.seat{width:34px;height:34px}.wire{height:64px}.tool{height:50px}
+  .coach{font-size:12px;line-height:1.3;min-height:0;margin:0 0 4px}.coach:not(.teach){display:none}}
+@media (min-width:600px) and (min-aspect-ratio:5/4){
   #app{max-width:1100px;display:grid;grid-template-columns:minmax(300px,380px) 1fr;column-gap:clamp(24px,4vw,56px);
     grid-template-rows:auto auto auto auto auto 1fr auto;
     grid-template-areas:"top top" "coach field" "nests field" "queue field" "wire field" ". field" "tools field";padding-block-end:12px}
@@ -158,6 +160,7 @@ button{font:inherit;color:inherit}
 }
 @media (max-height:540px){
   .slot{height:80px}
+  .top{padding-block:6px 0}.lvl b{font-size:26px}
   .overlay{padding-block:10px}
   .card{padding:14px 16px;gap:8px;border-radius:20px}
   .card h2{font-size:22px}.card p{font-size:13px}
@@ -165,6 +168,17 @@ button{font:inherit;color:inherit}
   .wear svg{width:40px;height:40px}.starrow svg{width:36px;height:36px}.newunlock svg{width:36px;height:36px}
   .lvb{height:44px}
 }
+@media (max-height:400px) and (min-aspect-ratio:5/4){
+  .slot{height:66px}.seat{width:30px;height:30px}.wire{height:52px}.tool{height:44px}.queue{margin-top:4px!important}.wire{margin-top:4px!important}
+  .coach{margin:4px 0 4px!important}.nest .bowl{width:110px;height:25px}
+}
+@media (max-width:400px){
+  .lvl{display:grid;grid-template-columns:auto auto;column-gap:6px;align-items:center;justify-content:start}
+  .lvl small{grid-row:1}.lvl .boss{grid-row:1;font-size:10px;padding:1px 6px}.lvl b{grid-row:2;grid-column:1 / span 2;font-size:26px}
+  .icons{gap:6px}.ibtn{width:38px;height:38px}.total{height:38px;padding:0 8px;font-size:14px}
+}
+@media (max-width:340px){#soundBtn{display:none}.ibtn{width:36px;height:36px}.total{height:36px}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 </style>
 
 <div id="app">
@@ -182,13 +196,14 @@ button{font:inherit;color:inherit}
   <section class="nests" id="nests" aria-label="Nests"></section>
   <div class="queue" id="queue"></div>
   <section class="wire" id="wire" aria-label="Wire"><svg class="cable" id="cable" aria-hidden="true"></svg><span class="wire-label" id="wireLabel"></span></section>
-  <section class="field" id="field"><div class="grid" id="grid" role="grid" aria-label="Roost"></div></section>
+  <section class="field" id="field"><div class="grid" id="grid" role="group" aria-label="Roost"></div></section>
   <footer class="tools">
     <button class="tool" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo<span class="badge" id="undoBadge"></span></button>
     <button class="tool" id="hintBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3Z"/></svg>Hint<span class="badge" id="hintBadge"></span></button>
     <button class="tool" id="perchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 14c6 4 14 4 20 0"/><path d="M12 5v6M9 8h6"/></svg>+1 Perch<span class="badge" id="perchBadge"></span></button>
   </footer>
   <div id="stage"></div>
+  <p class="sr" id="sr" aria-live="polite"></p>
   <div class="overlay" id="overlay" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
 </div>
 
@@ -248,7 +263,7 @@ function birdSVG(ci,acc=wear){
   <circle cx="27.6" cy="15.4" r="7.2" fill="${p.hex}"/>
   <polygon points="33.4,12.6 40,15.9 33.4,19.2" fill="#FF9F43" stroke="#16110C" stroke-width=".8" stroke-linejoin="round"/>
   <circle cx="29.7" cy="13.8" r="1.8" fill="#16110C"/><circle cx="30.2" cy="13.2" r=".6" fill="#fff"/>
-  <g transform="translate(14.6 21.4) scale(.62)"><g class="sym">${sym(p.sym,INK)}</g></g>
+  <g transform="translate(14 20.8) scale(.74)"><g class="sym">${sym(p.sym,INK)}</g></g>
   ${acc?ACC_SVG[acc]||'':''}
 </svg>`;
 }
@@ -319,14 +334,16 @@ const totalStars=()=>Object.values(best).reduce((a,b)=>a+(+b||0),0);
 function paintTotal(){const t=totalStars();$('#starTotal').innerHTML=STAR(true)+'<span>'+t+'</span>';$('#starTotal').setAttribute('aria-label',t+' stars earned')}
 const nextUnlock=t=>ACC.find(a=>a.stars>t);
 // local calendar day, so the daily puzzle changes at the player's midnight
-const dayKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dayNum=(d=new Date())=>Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
-const yesterdayKey=()=>{const d=new Date();d.setDate(d.getDate()-1);return dayKey(d)};
-const liveStreak=()=>(daily.last===dayKey()||daily.last===yesterdayKey())?(daily.streak||0):0;
+// older saves stored the last solved day as 'YYYY-MM-DD'
+if(typeof daily.last==='string'){const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(daily.last);daily.last=m?Math.floor(Date.UTC(+m[1],m[2]-1,+m[3])/864e5):undefined}
+const solvedToday=()=>daily.last===dayNum();
+const liveStreak=()=>liveStreakOn(daily,dayNum());
+const dayLabel=(day,month)=>new Date(day*864e5).toLocaleDateString('en-GB',{day:'numeric',month,timeZone:'UTC'});
 const FLAME='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.6 3.2 4.9 5.6 4.9 10.6A4.9 4.9 0 0 1 12 18a4.9 4.9 0 0 1-4.9-4.9c0-2.4 1.3-3.6 2.3-4.9.3 1.3.9 2.1 1.8 2.6C11.6 8.6 11 6 12 2.5Z" fill="currentColor"/><path d="M12 21.5a3 3 0 0 1-3-3c0-1.7 1.7-2.4 3-4.6 1.3 2.2 3 2.9 3 4.6a3 3 0 0 1-3 3Z" fill="#F4C95D"/></svg>';
 const CAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M12 13.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></svg>';
 function paintDaily(){
-  const b=$('#dailyBtn'),st=liveStreak(),done=daily.last===dayKey();
+  const b=$('#dailyBtn'),st=liveStreak(),done=solvedToday();
   b.innerHTML=CAL+(done?'':'<span class="dot"></span>')+(st?`<span class="streak">${st}</span>`:'');
   b.setAttribute('aria-label',`Daily puzzle${done?' (solved today)':' (new)'}${st?`, ${st}-day streak`:''}`);
 }
@@ -339,12 +356,25 @@ const COACH={
   4:'Check <b>Up next</b>. Free the birds the next nests need, and keep the wire clear.',
   5:'Waiting birds hop into their nest as soon as it arrives.',
 };
+// The campaign run is parked while the player visits the daily puzzle and restored exactly on the
+// way back (board, nests, wire, boosters, undo history, star conditions). Not kept across reloads.
+let parked=null;
 function startDaily(){
+  if(locked||flights>0){setTimeout(startDaily,120);return}   // let the current move finish first
+  if(mode==='level'&&G&&!over&&G.moves>0)parked={level,lv:G.lv,cap:G.cap,state:stateJSON(),undo:G.undo.slice(),tools:{...G.tools},
+    continues:G.continues,moves:G.moves,usedBooster:G.usedBooster,usedRewardedAd:G.usedRewardedAd};
   mode='daily';
-  const lv=dailyLevel(dayNum(),LEVEL_PACK);
-  setupLevel(lv);
+  setupLevel(dailyLevel(dayNum(),LEVEL_PACK));
+}
+function backToLevel(){
+  const p=parked;parked=null;
+  if(!p||p.level!==level)return startLevel(level);
+  mode='level';setupLevel(p.lv);
+  Object.assign(G,{cap:p.cap,undo:p.undo,tools:p.tools,continues:p.continues,moves:p.moves,usedBooster:p.usedBooster,usedRewardedAd:p.usedRewardedAd});
+  buildWire();restore(p.state,false);
 }
 function startLevel(L){
+  parked=null;
   mode='level';level=L;store.set('fh.level',L);
   if(L>maxLevel){maxLevel=L;store.set('fh.max',L)}
   setupLevel(levelFor(L,typeof LEVEL_PACK!=='undefined'?LEVEL_PACK:null));
@@ -359,9 +389,10 @@ function setupLevel(lv){
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
   locked=false;over=false;flights=0;
   const isDaily=mode==='daily';
-  $('#lvlLabel').textContent=isDaily?'Daily':'Level';$('#lvlNum').textContent=isDaily?new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}):L;
+  $('#lvlLabel').textContent=isDaily?'Daily':'Level';$('#lvlNum').textContent=isDaily?dayLabel(lv.day,'short'):L;
   $('#lvlLabel').parentElement.classList.toggle('is-daily',isDaily);$('#boss').hidden=!lv.boss||isDaily;
   $('#coach').innerHTML=isDaily?'Today’s puzzle. Same for everyone, new one tomorrow.':(COACH[L]||(lv.boss?'Storm level: more birds and more colours. Use the wire wisely.':''));
+  $('#coach').classList.toggle('teach',!isDaily&&!!COACH[L]);
   stage.innerHTML='';
   G.birds.forEach(b=>{const el=document.createElement('div');el.className='bird';el.innerHTML=`<div class="bi">${birdSVG(b.color)}</div>`;stage.appendChild(el);b.el=el});
   buildGrid();renderNests();renderQueue();buildWire();updateTools();paintTotal();paintDaily();
@@ -378,7 +409,7 @@ function buildGrid(){
 }
 function sizeGrid(){
   const {R,C}=G.lv,fr=fieldEl.getBoundingClientRect();
-  const cell=Math.max(30,Math.floor(Math.min((fr.width-14)/C,(fr.height-20)/R,80)));
+  const cell=Math.max(24,Math.floor(Math.min((fr.width-14)/C,(fr.height-20)/R,80)));
   gridEl.style.setProperty('--cell',cell+'px');
 }
 function cellAria(i){
@@ -473,8 +504,10 @@ function exitPoint(b){
 const center=b=>({x:parseFloat(b.el.style.left)+parseFloat(b.el.style.width)/2,y:parseFloat(b.el.style.top)+parseFloat(b.el.style.height)/2});
 
 /* ---------- play ---------- */
+const srEl=$('#sr');let srT=null;
+function say(msg){clearTimeout(srT);srEl.textContent='';srT=setTimeout(()=>srEl.textContent=msg,30)}
 async function tapCell(i){
-  if(over||locked||!G)return;
+  if(over||locked||!G||!overlay.hidden)return;
   const id=G.occ[i];if(id<0)return;
   const b=G.birds[id],bl=rayBlocker(G.occ,G.lv.R,G.lv.C,b.r,b.c,b.d);
   if(bl>=0){blockedFx(b,G.birds[bl]);return}
@@ -487,6 +520,7 @@ async function tapCell(i){
   else{G.wire.push(id);b.loc={t:'wire',i:G.wire.length-1};G.peak=Math.max(G.peak,G.wire.length);wireFull=G.wire.length>=G.cap}
   if(full||wireFull)locked=true;
   updateWireState();updateTools();sfx.chirp(b.color);buzz(8);hideHand();
+  say(ni>=0?`${PAL[b.color].name} bird to the nest, ${G.nests[ni].filled.length} of 3`:`${PAL[b.color].name} bird waits on the wire, ${G.wire.length} of ${G.cap} perches`);
   b.el.classList.add('flying');flights++;
   await setBird(b,true,via,520);
   if(run!==runId)return;   // level restarted or switched during the flight
@@ -507,6 +541,7 @@ async function completeNest(ni,run=runId){
   if(run!==runId)return;
   birds.forEach(b=>{b.loc={t:'gone'};b.el.getAnimations().forEach(a=>a.cancel());b.el.classList.remove('flying');b.el.hidden=true});
   G.nests[ni]=G.qi<G.lv.queue.length?{c:G.lv.queue[G.qi++],filled:[]}:null;
+  say(G.nests[ni]?`Nest full. Next nest: ${PAL[G.nests[ni].c].name}`:'Nest full');
   renderNest(ni);renderQueue();
   const fresh=slot.querySelector('.nest');
   if(fresh)await fresh.animate([{transform:'translateY(-26px)',opacity:0},{transform:'none',opacity:1}],{duration:T(280),easing:'cubic-bezier(.2,.9,.3,1.25)'}).finished.catch(()=>{});
@@ -532,7 +567,7 @@ function checkWin(){
   const run=runId;over=true;sfx.win();buzz([20,60,20,60,40]);feathers();setTimeout(()=>{if(run===runId)showWin()},T(650));
 }
 function blockedFx(b,blk){
-  ensureAudio();sfx.bonk();buzz(25);
+  ensureAudio();sfx.bonk();buzz(25);say(`Blocked by the ${PAL[blk.color].name} bird`);
   if(!RM)b.el.animate([{transform:'none'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(-2px)'},{transform:'none'}],{duration:280});
   blk.el.animate([{transform:'none'},{transform:`translate(${blk.el.offsetWidth*.04}px,${blk.el.offsetWidth*.04}px) scale(.92)`},{transform:'none'}],{duration:280});
   const a=center(b),c=center(blk),ln=document.createElement('div');ln.className='lane';
@@ -561,17 +596,18 @@ function arrowMove(from,key){
 }
 
 /* ---------- tools ---------- */
-function pushUndo(){G.undo.push(JSON.stringify({locs:G.birds.map(b=>b.loc),occ:[...G.occ],nests:G.nests,qi:G.qi,wire:G.wire,peak:G.peak}));if(G.undo.length>40)G.undo.shift()}
+const stateJSON=()=>JSON.stringify({locs:G.birds.map(b=>b.loc),occ:[...G.occ],nests:G.nests,qi:G.qi,wire:G.wire,peak:G.peak});
+function pushUndo(){G.undo.push(stateJSON());if(G.undo.length>40)G.undo.shift()}
 function doUndo(){
   if(locked||over||flights>0||!G.undo.length)return;
   if(G.tools.undo<=0){if(Ads.enabled)Ads.rewarded('undo',()=>{G.usedRewardedAd=true;G.tools.undo++;doUndo()});else toast('No undos left on this level');return}
   G.tools.undo--;G.usedBooster=true;restore(G.undo.pop());toast('Move undone');
 }
-function restore(json){
+function restore(json,animate=true){
   const s=JSON.parse(json);
   G.birds.forEach((b,i)=>b.loc=s.locs[i]);G.occ=Int16Array.from(s.occ);G.nests=s.nests;G.qi=s.qi;G.wire=s.wire;G.peak=s.peak??G.peak;
   renderNests();renderQueue();for(let i=0;i<G.occ.length;i++)cellAria(i);
-  G.birds.forEach(b=>setBird(b,true,null,300));updateWireState();updateTools();updateHand();
+  G.birds.forEach(b=>setBird(b,animate,null,300));updateWireState();updateTools();updateHand();
 }
 function liteFromG(){
   return {occ:Int16Array.from(G.occ),alive:Uint8Array.from(G.birds.map(b=>b.loc.t==='grid'?1:0)),rem:G.birds.filter(b=>b.loc.t==='grid').length,
@@ -581,12 +617,15 @@ function doHint(){
   if(locked||over||flights>0)return;
   if(G.tools.hint<=0){if(Ads.enabled)Ads.rewarded('hint',()=>{G.usedRewardedAd=true;G.tools.hint++;doHint()});else toast('No hints left on this level');return}
   const lv={...G.lv,cap:G.cap},s=liteFromG();
-  const path=solve(lv,s,40000);
+  let st=solveStatus(lv,s,40000);
+  if(st.status==='budget')st=solveStatus(lv,s,400000);
+  const path=st.path;
+  if(st.status==='budget'){toast('Too many options to work out from here. Try a move first.');return}
   // No winning line from here: say so and keep the hint (and the star) instead of pointing at a losing move.
   if(!path||!path.length){toast(G.undo.length?'No way out from here. Try Undo.':'No way out from here. Try again.');return}
   const m=path[0];
   G.tools.hint--;G.usedBooster=true;updateTools();
-  const b=G.birds[m],cell=gridEl.children[b.r*G.lv.C+b.c];
+  const b=G.birds[m],cell=gridEl.children[b.r*G.lv.C+b.c];say(`Hint: the ${PAL[b.color].name} bird facing ${DIRNAME[b.d]}`);
   cell.classList.remove('hint');void cell.offsetWidth;cell.classList.add('hint');
   setTimeout(()=>cell.classList.remove('hint'),2800);
 }
@@ -602,8 +641,21 @@ function addPerch(n){
 
 /* ---------- overlays ---------- */
 let overlayDismiss=false;   // menus can be closed with Escape or a tap outside; win/fail screens cannot
-function showOverlay(html,dismiss=false){card.innerHTML=html;overlayDismiss=dismiss;overlay.hidden=false;overlay.scrollTop=0;const f=card.querySelector('button');if(f)f.focus({preventScroll:true})}
-function hideOverlay(){overlay.hidden=true;card.innerHTML='';overlayDismiss=false}
+let returnFocus=null;
+const behind=()=>[...app.children].filter(el=>el!==overlay);
+function showOverlay(html,dismiss=false){
+  if(overlay.hidden)returnFocus=document.activeElement;
+  card.innerHTML=html;overlayDismiss=dismiss;
+  const h=card.querySelector('h2');card.setAttribute('aria-label',h?h.textContent:'Dialog');
+  behind().forEach(el=>el.inert=true);
+  overlay.hidden=false;overlay.scrollTop=0;const f=card.querySelector('button');if(f)f.focus({preventScroll:true});
+}
+function hideOverlay(){
+  const wasOpen=!overlay.hidden;
+  overlay.hidden=true;card.innerHTML='';overlayDismiss=false;behind().forEach(el=>el.inert=false);
+  if(wasOpen&&returnFocus&&returnFocus.isConnected&&!returnFocus.disabled)returnFocus.focus({preventScroll:true});
+  returnFocus=null;
+}
 let toastT=null;
 function toast(msg){
   document.querySelectorAll('.toast').forEach(t=>t.remove());
@@ -620,16 +672,16 @@ function starsFor(){
   return {n,tips};
 }
 function showDailyWin(){
-  const today=dayKey();
-  if(daily.last!==today){daily.streak=daily.last===yesterdayKey()?(daily.streak||0)+1:1;daily.last=today;daily.top=Math.max(daily.top||0,daily.streak);store.set('fh.daily',daily)}
+  const day=G.lv.day,isToday=day===dayNum();
+  daily=creditDaily(daily,day);store.set('fh.daily',daily);
   paintDaily();
   const st=daily.streak||1;
-  showOverlay(`<span class="eyebrow">Daily puzzle · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long'})}</span>
+  showOverlay(`<span class="eyebrow">Daily puzzle · ${dayLabel(day,'long')}</span>
     <div class="flame">${FLAME}<span>${st}-day streak</span></div>
-    <h2>Solved for today</h2>
-    <p>${st>1?'Keep it going.':'Start a streak.'} A new puzzle arrives at midnight.</p>
+    <h2>${isToday?'Solved for today':'Solved'}</h2>
+    <p>${isToday?`${st>1?'Keep it going.':'Start a streak.'} A new puzzle arrives at midnight.`:'Today’s puzzle is ready on the calendar button.'}</p>
     <button class="btn primary" id="backBtn">Back to level ${level}</button>`);
-  $('#backBtn').onclick=()=>startLevel(level);
+  $('#backBtn').onclick=backToLevel;
 }
 function showWin(){
   if(mode==='daily')return showDailyWin();
@@ -663,7 +715,7 @@ function showFail(){
     ${canGo?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${Ads.enabled?'Watch ad':'Keep going'} · +2 perches</button>`:''}
     <button class="btn ${canGo?'ghost':'primary'}" id="retryBtn">Try again</button>
     ${isDaily?`<button class="btn ghost" id="backLvlBtn">Back to level ${level}</button>`:''}`);
-  if(isDaily)$('#backLvlBtn').onclick=()=>startLevel(level);
+  if(isDaily)$('#backLvlBtn').onclick=backToLevel;
   if(canGo)$('#contBtn').onclick=()=>{const go=()=>{if(Ads.enabled)G.usedRewardedAd=true;hideOverlay();G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!')};Ads.enabled?Ads.rewarded('continue',go):go()};
   $('#retryBtn').onclick=()=>mode==='daily'?startDaily():startLevel(level);
 }
@@ -683,21 +735,24 @@ function showWardrobe(){
   $('#wClose').onclick=hideOverlay;
 }
 const canVibrate='vibrate' in navigator;
+const soundInMenu=()=>getComputedStyle($('#soundBtn')).display==='none';   // the header drops it on very narrow phones
 function showMenu(){
   const isDaily=mode==='daily';
   showOverlay(`<h2>Menu</h2>
     ${isDaily?`<button class="btn row" id="mBack">Back to level ${level}</button>`
-             :`<button class="btn row" id="mDaily">Daily puzzle${daily.last===dayKey()?' · solved today':''}</button>`}
+             :`<button class="btn row" id="mDaily">Daily puzzle${solvedToday()?' · solved today':''}</button>`}
     <button class="btn row" id="mLevels">Levels</button>
     <button class="btn row" id="mWear">Wardrobe · ${totalStars()}★</button>
     <button class="btn row" id="mHow">How to play</button>
     <button class="btn row" id="mRestart">${isDaily?'Restart today’s puzzle':`Restart level ${level}`}</button>
+    ${soundInMenu()?`<button class="btn row" id="mSound">Sound: ${soundOn?'on':'off'}</button>`:''}
     ${canVibrate?`<button class="btn row" id="mVibe">Vibration: ${vibeOn?'on':'off'}</button>`:''}
     <button class="btn row" id="mReset">Start over from level 1</button>
     <button class="btn primary" id="mClose">Back to the game</button>`,true);
   $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>isDaily?startDaily():startLevel(level);
-  if(isDaily)$('#mBack').onclick=()=>startLevel(level);else $('#mDaily').onclick=startDaily;
+  if(isDaily)$('#mBack').onclick=backToLevel;else $('#mDaily').onclick=startDaily;
   $('#mLevels').onclick=showLevels;$('#mWear').onclick=showWardrobe;
+  if(soundInMenu())$('#mSound').onclick=()=>{toggleSound();showMenu()};
   if(canVibrate)$('#mVibe').onclick=()=>{vibeOn=!vibeOn;store.set('fh.vibe',vibeOn);if(vibeOn)buzz(30);showMenu()};
   $('#mReset').onclick=showConfirmReset;$('#mClose').onclick=hideOverlay;
 }
@@ -769,13 +824,15 @@ gridEl.addEventListener('keydown',e=>{
   if(ARROWS[e.key]){e.preventDefault();arrowMove(c,e.key);return}
   if(e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
 overlay.addEventListener('click',e=>{if(e.target===overlay&&overlayDismiss)hideOverlay()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlayDismiss){e.preventDefault();hideOverlay();$('#menuBtn').focus({preventScroll:true})}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlayDismiss){e.preventDefault();hideOverlay()}});
 $('#undoBtn').onclick=()=>{ensureAudio();doUndo()};
 $('#hintBtn').onclick=()=>{ensureAudio();doHint()};
 $('#perchBtn').onclick=()=>{ensureAudio();doPerch()};
 $('#menuBtn').onclick=showMenu;
-$('#dailyBtn').onclick=()=>{if(mode==='daily'&&!over)return;startDaily()};
-$('#soundBtn').onclick=()=>{soundOn=!soundOn;store.set('fh.sound',soundOn);paintSound();if(soundOn)ensureAudio()};
+$('#dailyBtn').onclick=()=>{if(mode==='daily'&&!over&&G.lv.day===dayNum())return;startDaily()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)paintDaily()});   // day may have rolled over
+function toggleSound(){soundOn=!soundOn;store.set('fh.sound',soundOn);paintSound();if(soundOn)ensureAudio()}
+$('#soundBtn').onclick=toggleSound;
 let rT=null;
 new ResizeObserver(()=>{clearTimeout(rT);rT=setTimeout(layoutAll,60)}).observe(app);
 paintSound();

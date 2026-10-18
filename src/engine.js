@@ -87,8 +87,14 @@ const isWon = s => s.rem === 0 && s.wire.length === 0;
 const isLost = (lv, s) => s.wire.length >= lv.cap;
 
 // Depth-first solver used for hints. Tries nest-matching moves first.
-function solve(lv, s0, budget = 30000) {
-  const seen = new Set(); let nodes = 0;
+// Returns the winning order, or null if none was found (which includes running out of budget;
+// use solveStatus when the difference matters).
+function solve(lv, s0, budget = 30000) { return solveStatus(lv, s0, budget).path; }
+
+// { status: 'solved', path } | { status: 'unsolvable', path: null } | { status: 'budget', path: null }
+// 'unsolvable' is proven: the whole reachable state space was searched.
+function solveStatus(lv, s0, budget = 30000) {
+  const seen = new Set(); let nodes = 0, out = false;
   const key = s => s.alive.join('') + '|' + s.wire.join(',') + '|' + s.nests.map(n => n ? n.c + ':' + n.n : 'x').join(',') + '|' + s.qi;
   function score(s, i) {
     const c = lv.birds[i].color;
@@ -99,13 +105,14 @@ function solve(lv, s0, budget = 30000) {
   function dfs(s) {
     if (isWon(s)) return [];
     if (isLost(lv, s)) return null;
-    if (++nodes > budget) return null;
+    if (++nodes > budget) { out = true; return null; }
     const k = key(s); if (seen.has(k)) return null; seen.add(k);
     const moves = freeMoves(lv, s).sort((a, b) => score(s, a) - score(s, b));
-    for (const m of moves) { const r = dfs(applyLite(lv, s, m)); if (r) { r.unshift(m); return r; } }
+    for (const m of moves) { const r = dfs(applyLite(lv, s, m)); if (r) { r.unshift(m); return r; } if (out) return null; }
     return null;
   }
-  return dfs(s0);
+  const path = dfs(s0);
+  return { status: path ? 'solved' : out ? 'budget' : 'unsolvable', path };
 }
 
 function nestOrder(n, colors, rand) {
@@ -289,7 +296,20 @@ function dailyLevel(day, pack) {
   return { ...lv, L: 0, day, daily: true, boss: false, base: base + 1 };
 }
 
+// Daily streak after solving the puzzle of day `day` (days since 1970-01-01, local calendar).
+// The puzzle's own day is credited, not the day it was finished: finishing yesterday's puzzle after
+// midnight counts for yesterday. Solving the same or an older day again changes nothing.
+//   prev: { last?: day number, streak?: n, top?: n }  ->  new object
+function creditDaily(prev, day) {
+  const p = prev || {};
+  if (p.last != null && p.last >= day) return { ...p };
+  const streak = p.last === day - 1 ? (p.streak || 0) + 1 : 1;
+  return { ...p, last: day, streak, top: Math.max(p.top || 0, streak) };
+}
+// Streak to show today: still alive if the last solved puzzle is today's or yesterday's.
+const liveStreakOn = (d, today) => (d && d.last != null && today - d.last <= 1 && today >= d.last) ? (d.streak || 0) : 0;
+
 if (typeof module !== 'undefined') module.exports = {
-  DIRS, PALN, levelParams, rayBlocker, initLite, freeMoves, applyLite, isWon, isLost, solve,
+  DIRS, PALN, levelParams, rayBlocker, initLite, freeMoves, applyLite, isWon, isLost, solve, solveStatus, creditDaily, liveStreakOn,
   buildCandidate, generate, forcedWait, botWinRate, encodeLevel, decodeLevel, transformLevel, levelFor, dailyLevel, rng, shuffle,
 };
