@@ -392,8 +392,15 @@ function tipOnce(key,html){
   const c=$('#coach');c.innerHTML=html;c.classList.add('teach','tip');
   if(!RM)c.animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'});
 }
+// At most one deferred navigation, tied to the run that asked for it. setupLevel cancels it, so any
+// other navigation (restart, back to level, level list) wins over a request still waiting.
+let navTimer=0;
+function cancelNav(){clearTimeout(navTimer);navTimer=0}
 function startDaily(){
-  if(locked||flights>0){setTimeout(startDaily,120);return}   // let the current move finish first
+  cancelNav();
+  // A finished run (won, wire full, stuck) has nothing left to wait for: switch now. Mid-move, let
+  // the move finish first; a nest transition still needs its lock.
+  if(!over&&(locked||flights>0)){const run=runId;navTimer=setTimeout(()=>{navTimer=0;if(run===runId)startDaily()},120);return}
   if(mode==='level'&&G&&!over&&G.moves>0)parked={level,lv:G.lv,cap:G.cap,state:stateJSON(),undo:G.undo.slice(),tools:{...G.tools},
     continues:G.continues,moves:G.moves,usedBooster:G.usedBooster,usedRewardedAd:G.usedRewardedAd};
   mode='daily';
@@ -418,7 +425,7 @@ function setupLevel(lv){
   G={lv,birds:lv.birds.map((b,i)=>({...b,id:i,loc:{t:'grid'}})),occ:new Int16Array(lv.R*lv.C).fill(-1),
      nests:Array.from({length:open},(_,i)=>i<lv.queue.length?{c:lv.queue[i],filled:[]}:null),qi:Math.min(open,lv.queue.length),
      wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0,usedBooster:false,usedRewardedAd:false};
-  runId++;
+  runId++;cancelNav();
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
   (lv.eggs||[]).forEach((e,k)=>G.occ[e.r*lv.C+e.c]=G.birds.length+k);   // eggs block like birds (ADR 0006)
   locked=false;over=false;flights=0;
@@ -449,7 +456,11 @@ const eggOf=id=>G.lv.eggs[id-G.birds.length];
 function renderEggs(){
   (G.lv.eggs||[]).forEach((e,k)=>{
     const i=e.r*G.lv.C+e.c,cell=gridEl.children[i],alive=G.occ[i]===G.birds.length+k;
-    let el=cell.querySelector('.egg');
+    // An egg still playing its hatch animation belongs to that animation, whose end removes it.
+    // Never reuse it for a live egg (Undo mid-hatch): drop it and draw a fresh one.
+    const dying=cell.querySelector('.egg.hatching');
+    if(alive&&dying)dying.remove();
+    let el=cell.querySelector('.egg:not(.hatching)');
     if(alive&&!el){el=document.createElement('span');el.className='egg';el.innerHTML=EGG(e.color);cell.appendChild(el)}
     if(!alive&&el)el.remove();
     cell.classList.toggle('has-egg',alive);
@@ -602,12 +613,12 @@ function hatchEggs(color){
     const i=e.r*G.lv.C+e.c,id=G.birds.length+k;
     if(e.color!==color||G.occ[i]!==id)return;
     G.occ[i]=-1;cellAria(i);gridEl.children[i].classList.remove('has-egg');
-    const el=gridEl.children[i].querySelector('.egg');if(!el)return;
+    const el=gridEl.children[i].querySelector('.egg:not(.hatching)');if(!el)return;
     sfx.crack();
     const n=PAL[color].name.toLowerCase();say(`The ${n} egg hatched`);
     tipOnce('hatch',`The ${n} nest is full, so the <b>${n} egg hatched</b> and cleared the way.`);
     if(RM){el.remove();return}
-    el.querySelector('.crack').setAttribute('opacity','1');
+    el.classList.add('hatching');el.querySelector('.crack').setAttribute('opacity','1');
     el.animate([{transform:'none',opacity:1},{transform:'rotate(-8deg)',opacity:1,offset:.25},{transform:'rotate(8deg)',opacity:1,offset:.5},{transform:'scale(1.25)',opacity:0}],{duration:520,easing:'ease-in'}).finished.then(()=>el.remove(),()=>el.remove());
   });
 }
@@ -906,10 +917,11 @@ function showLevels(){
 }
 function showHow(){
   showOverlay(`<h2>How to play</h2><ul class="howto">
-    <li><span>1</span>Tap a bird. It flies off only if no bird sits in the direction it faces.</li>
+    <li><span>1</span>Tap a bird. It flies off the way it faces, but only if nothing blocks its path.</li>
     <li><span>2</span>If its colour matches the open nest, it lands there. Three birds fill a nest, and the next nest moves in.</li>
     <li><span>3</span>Any other bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
     <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li>
+    <li><span>5</span>From level 12, eggs block the way too. An egg hatches when the nest of its colour is full.</li>
     <li><span>★</span>Three stars: win without Undo, Hint or +1 Perch, and keep at least two perches free. On levels 1–5 boosters are free.</li></ul>
     <button class="btn primary" id="howOk">Got it</button>`,true);
   $('#howOk').onclick=hideOverlay;
