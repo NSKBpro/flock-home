@@ -7,16 +7,16 @@ Output (assets/videos/):
 CrazyGames rules this follows: 15–20 s, no sound, the static cover as the first frame,
 real gameplay at normal speed, no mouse cursor, no black bars, no promo text.
 
-How: the game plays itself (each move is the hint solver's choice) in headless Chromium while
-Chrome's screencast captures frames with timestamps. ffmpeg turns them into a constant 30 fps
-H.264 file with the cover image as the opening second.
+How: frame-by-frame, on a virtual clock, so the video is perfectly smooth no matter how slow
+the recording machine is. Playwright's clock controls timers; every running animation (Web
+Animations, CSS animations and transitions) is paused and moved to the exact time of each
+frame before a screenshot is taken. The game plays itself: each move follows a winning line
+from the solver that keeps two perches free, so the level ends on a three-star win.
 
 Needs: `npm run build` first, Python Playwright with Chromium, and ffmpeg with libx264.
 Usage: python3 tools/video/record.py [level=6]
 """
 import asyncio
-import base64
-import os
 import pathlib
 import shutil
 import subprocess
@@ -29,110 +29,109 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 GAME = ROOT / 'dist' / 'index.html'
 COVER = ROOT / 'tools' / 'covers' / 'cover.html'
 OUT = ROOT / 'assets' / 'videos'
-LEVEL = int(sys.argv[1]) if len(sys.argv) > 1 else 6  # short level whose winning line fills the wire to 4 of 5
+LEVEL = int(sys.argv[1]) if len(sys.argv) > 1 else 6  # short level that still uses the wire
+FPS = 30
 COVER_SECONDS = 1.0
-TOTAL_SECONDS = 19.0       # CrazyGames cuts anything past 20 s
-MOVE_GAP_MS = 240          # pause between taps; flights still read clearly
+MAX_SECONDS = 19.5         # CrazyGames cuts anything past 20 s
+HOLD_AFTER_WIN_MS = 2300   # keep the win screen (stars popping in) on screen
+START_DELAY_MS = 400       # a calm moment on the board before the first tap
+MOVE_GAP_MS = 430          # time between taps; the next bird may take off while one is still flying
 
 FORMATS = [
-    # name, cover format, final size, viewport for the game, device scale factor
-    ('landscape', 'land', (1920, 1080), (960, 540), 2.0),
-    ('portrait', 'port', (1080, 1620), (540, 810), 2.0),
+    # name, cover format, final size, CSS viewport for the game, device scale factor
+    ('landscape', 'land', (1920, 1080), (960, 540), 2),
+    ('portrait', 'port', (1080, 1620), (540, 810), 2),
 ]
+
+# Runs in the page. Keeps every animation paused and positioned at virtual time `now`.
+# An animation first seen at time t is treated as having started at t (its own delay is kept).
+# When its time is up it is finished, which resolves its `finished` promise for the game code.
+STEP_ANIMATIONS = """async (now) => {
+  const born = window.__born || (window.__born = new WeakMap());
+  for (let pass = 0; pass < 12; pass++) {
+    let changed = false;
+    for (const a of document.getAnimations()) {
+      if (a.playState === 'finished' || a.playState === 'idle') continue;
+      if (!born.has(a)) { born.set(a, now - (a.currentTime || 0)); changed = true; }
+      const t = now - born.get(a);
+      const timing = a.effect.getComputedTiming();
+      const end = timing.endTime;
+      if (end !== Infinity && t >= end) { a.finish(); changed = true; continue; }
+      a.pause();
+      a.currentTime = t;
+    }
+    // let promise callbacks (await anim.finished) run and start their next animations
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    if (!changed) break;
+  }
+}"""
+
+NEXT_MOVE = """(cap) => {
+  if (locked || over) return -2;
+  const p = solve({...G.lv, cap}, liteFromG(), 80000) || solve({...G.lv, cap: G.cap}, liteFromG(), 80000);
+  if (!p || !p.length) return -1;
+  const b = G.birds[p[0]];
+  return b.r * G.lv.C + b.c;
+}"""
 
 
 async def render_cover(browser, fmt, size, path):
-    w, h = size
+    w, _ = size
     base = {'land': (1920, 1080), 'port': (800, 1200)}[fmt]
-    scale = w / base[0]
-    page = await browser.new_page(viewport={'width': base[0], 'height': base[1]}, device_scale_factor=scale)
+    page = await browser.new_page(viewport={'width': base[0], 'height': base[1]}, device_scale_factor=w / base[0])
     await page.goto(f'{COVER.as_uri()}?f={fmt}')
     await page.wait_for_selector('body[data-ready]')
-    await page.screenshot(path=str(path), type='jpeg', quality=95)  # same format as the frames, for ffmpeg concat
+    await page.screenshot(path=str(path), type='png')
     await page.close()
 
 
 async def record_gameplay(browser, viewport, dpr, frames_dir):
-    # The device scale factor comes from the browser launch flag (see main): Chrome's screencast
-    # ignores a context-level scale factor and would capture at CSS-pixel size.
-    ctx = await browser.new_context(viewport={'width': viewport[0], 'height': viewport[1]})
-    await ctx.add_init_script(f"""try{{localStorage.setItem('fh.seenHow','true');localStorage.setItem('fh.level','{LEVEL}');}}catch(e){{}}""")
+    ctx = await browser.new_context(viewport={'width': viewport[0], 'height': viewport[1]}, device_scale_factor=dpr)
+    await ctx.add_init_script(f"""try{{localStorage.setItem('fh.seenHow','true');localStorage.setItem('fh.level','{LEVEL}');localStorage.removeItem('fh.stars');}}catch(e){{}}""")
     page = await ctx.new_page()
-    await page.emulate_media(reduced_motion='no-preference')
+    await page.clock.install()
     await page.goto(GAME.as_uri())
     await page.wait_for_function('typeof G==="object" && G && G.birds')
-    await page.wait_for_timeout(700)
+    await page.clock.run_for(100)        # let the first layout frame run
+    await page.evaluate('document.fonts.ready')
 
-    cdp = await ctx.new_cdp_session(page)
-    frames = []
-
-    recording = True
-
-    async def ack(session_id):
-        try:
-            await cdp.send('Page.screencastFrameAck', {'sessionId': session_id})
-        except Exception:
-            pass  # the page may already be closing
-
-    def on_frame(ev):
-        if recording:
-            frames.append((ev['metadata']['timestamp'], ev['data']))
-            asyncio.ensure_future(ack(ev['sessionId']))
-
-    cdp.on('Page.screencastFrame', on_frame)
-    w, h = int(viewport[0] * dpr), int(viewport[1] * dpr)
-    await cdp.send('Page.startScreencast', {'format': 'jpeg', 'quality': 92, 'maxWidth': w, 'maxHeight': h, 'everyNthFrame': 1})
-    await page.wait_for_timeout(400)
-
-    start = asyncio.get_event_loop().time()
-    while asyncio.get_event_loop().time() - start < TOTAL_SECONDS - COVER_SECONDS + 0.5:
-        if await page.evaluate('over'):
-            await page.wait_for_timeout(300)
-            continue
-        cell = await page.evaluate("""(()=>{if(locked)return -2;
-            const p=solve({...G.lv,cap:G.cap},liteFromG(),60000);if(!p||!p.length)return -1;
-            const b=G.birds[p[0]];return b.r*G.lv.C+b.c})()""")
-        if cell == -2:
-            await page.wait_for_timeout(80)
-            continue
-        if cell < 0:
+    frame_ms = 1000 / FPS
+    max_frames = int((MAX_SECONDS - COVER_SECONDS) * FPS)
+    now, last_tap, win_at, n = 0.0, START_DELAY_MS - MOVE_GAP_MS, None, 0
+    for n in range(max_frames):
+        # game logic for this frame
+        if win_at is None and now - last_tap >= MOVE_GAP_MS:
+            cell = await page.evaluate(NEXT_MOVE, 4)  # cap 4 = keep two of five perches free → 3 stars
+            if cell >= 0:
+                await page.dispatch_event(f'.cell[data-i="{cell}"]', 'pointerdown')
+                last_tap = now
+        if win_at is None and await page.evaluate('!overlay.hidden'):
+            win_at = now
+        if win_at is not None and now - win_at >= HOLD_AFTER_WIN_MS:
             break
-        await page.dispatch_event(f'.cell[data-i="{cell}"]', 'pointerdown')
-        await page.wait_for_timeout(MOVE_GAP_MS)
-
-    recording = False
-    await cdp.send('Page.stopScreencast')
-    await page.wait_for_timeout(200)
+        # advance the world by one frame and capture it
+        await page.clock.run_for(int(round(frame_ms)))
+        now += frame_ms
+        await page.evaluate(STEP_ANIMATIONS, now)
+        await page.screenshot(path=str(frames_dir / f'f{n:05d}.png'), type='png')
     await ctx.close()
-    if not frames:
-        raise SystemExit('No frames captured.')
-
-    t0 = frames[0][0]
-    for i, (ts, data) in enumerate(frames):
-        (frames_dir / f'f{i:05d}.jpg').write_bytes(base64.b64decode(data))
-    return [(f'f{i:05d}.jpg', ts - t0) for i, (ts, _) in enumerate(frames)]
+    return n + 1, win_at
 
 
-def encode(cover_img, frames, frames_dir, size, out_path):
-    # concat list: cover for COVER_SECONDS, then each frame until the next frame's timestamp
-    lines = [f"file '{cover_img}'", f'duration {COVER_SECONDS:.3f}']
-    limit = TOTAL_SECONDS - COVER_SECONDS
-    for i, (name, t) in enumerate(frames):
-        if t >= limit:
-            break
-        nxt = frames[i + 1][1] if i + 1 < len(frames) else t + 1 / 30
-        lines += [f"file '{frames_dir / name}'", f'duration {max(1 / 60, min(nxt, limit) - t):.4f}']
-    lines.append(lines[-2])  # concat demuxer needs the last file repeated
-    listing = frames_dir / 'list.txt'
-    listing.write_text('\n'.join(lines) + '\n')
-    if os.environ.get('FH_VIDEO_DEBUG'):
-        shutil.copytree(frames_dir, os.environ['FH_VIDEO_DEBUG'], dirs_exist_ok=True)
+def encode(cover_png, frames_dir, frame_count, size, out_path):
     w, h = size
+    filt = (
+        f'[0:v]scale={w}:{h}:flags=lanczos,format=yuv420p,setsar=1[c];'
+        f'[1:v]scale={w}:{h}:flags=lanczos,format=yuv420p,setsar=1[g];'
+        '[c][g]concat=n=2:v=1:a=0[v]'
+    )
     subprocess.run([
-        'ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', str(listing),
-        '-vf', f'scale={w}:{h}:flags=lanczos,fps=30,format=yuv420p',
-        '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-movflags', '+faststart', '-an',
-        '-t', f'{TOTAL_SECONDS:.2f}', str(out_path),
+        'ffmpeg', '-y', '-loglevel', 'error',
+        '-loop', '1', '-framerate', str(FPS), '-t', f'{COVER_SECONDS}', '-i', str(cover_png),
+        '-framerate', str(FPS), '-i', str(frames_dir / 'f%05d.png'),
+        '-filter_complex', filt, '-map', '[v]',
+        '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-r', str(FPS),
+        '-movflags', '+faststart', '-an', str(out_path),
     ], check=True)
 
 
@@ -147,14 +146,14 @@ async def main():
         for name, fmt, size, viewport, dpr in FORMATS:
             with tempfile.TemporaryDirectory() as tmp:
                 tmp = pathlib.Path(tmp)
-                cover = tmp / 'cover.jpg'
+                cover = tmp / 'cover.png'
                 await render_cover(browser, fmt, size, cover)
-                hi = await p.chromium.launch(args=[f'--force-device-scale-factor={dpr}'])
-                frames = await record_gameplay(hi, viewport, dpr, tmp)
-                await hi.close()
+                frames, win_at = await record_gameplay(browser, viewport, dpr, tmp)
                 out = OUT / f'flock-home-preview-{name}-{size[0]}x{size[1]}.mp4'
-                encode(cover, frames, tmp, size, out)
-                print(f'wrote {out.relative_to(ROOT)}  ({out.stat().st_size / 1e6:.1f} MB, {len(frames)} frames captured)')
+                encode(cover, tmp, frames, size, out)
+                won = f'win at {win_at / 1000 + COVER_SECONDS:.1f} s' if win_at is not None else 'NO WIN'
+                print(f'wrote {out.relative_to(ROOT)}  ({out.stat().st_size / 1e6:.1f} MB, '
+                      f'{COVER_SECONDS + frames / FPS:.1f} s, {won})')
         await browser.close()
 
 

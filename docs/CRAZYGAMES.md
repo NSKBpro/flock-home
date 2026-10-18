@@ -23,9 +23,9 @@ Rules: no borders, no text except the title, no icons or store logos, nothing co
 
 - [x] Landscape 1920×1080 (16:9) — `assets/videos/flock-home-preview-landscape-1920x1080.mp4`
 - [x] Portrait 1080×1620 (2:3) — `assets/videos/flock-home-preview-portrait-1080x1620.mp4`
-- [x] 19 seconds, under 1 MB each, H.264, **no audio track**
+- [x] About 17 seconds, under 1 MB each, H.264 at a steady 30 fps, **no audio track**
 - [x] First second is the static cover
-- [x] Real gameplay at normal speed (level 6, played by the hint solver); no black screens, logo intros, black bars, mouse cursor, "Play Now" text or social icons
+- [x] Real gameplay at normal speed (level 6, played by the hint solver, ending on a three-star win), recorded frame by frame on a virtual clock so it never stutters; no black screens, logo intros, black bars, mouse cursor, "Play Now" text or social icons
 
 Re-record with `npm run build && npm run video` after visible gameplay changes.
 
