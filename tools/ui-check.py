@@ -3,14 +3,19 @@
 Usage:  npm run build && npm run ui          (or: python3 tools/ui-check.py path/to/index.html)
 Covers what the engine tests cannot: layout at portal and phone sizes, dialogs, daily-puzzle
 navigation and dates, undo, restart during animation, failure and continue, and that the page's
-own state matches the pure engine move by move. Exits non-zero if any check fails.
+own state matches the pure engine move by move. Exits non-zero if any check fails or any page
+throws an uncaught error.
 """
-import json, pathlib, sys
+import inspect, json, pathlib, sys
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 URL = pathlib.Path(sys.argv[1]).resolve().as_uri() if len(sys.argv) > 1 else (ROOT / 'dist' / 'index.html').as_uri()
 results = []
+page_errors = []   # (scenario, message): every uncaught page error fails the run
+
+def watch(page, scenario):
+    page.on('pageerror', lambda e: page_errors.append((scenario, str(e))))
 
 def check(name, ok, detail=''):
     results.append((name, bool(ok), detail))
@@ -27,7 +32,9 @@ def open_page(br, w, h, init='', reduced=True):
     ctx = br.new_context(viewport={'width': w, 'height': h}, reduced_motion='reduce' if reduced else 'no-preference')
     page = ctx.new_page()
     errs = []
+    scenario = f'{w}x{h} page opened at ui-check.py:{inspect.stack()[1].lineno}'
     page.on('pageerror', lambda e: errs.append(str(e)))
+    watch(page, scenario)
     if init: page.add_init_script(init)
     page.goto(URL); page.wait_for_timeout(300)
     return ctx, page, errs
@@ -40,6 +47,16 @@ PLAY = """async (until) => {
     const b = G.birds[m]; await tapCell(b.r * G.lv.C + b.c);
   }
   await new Promise(r => setTimeout(r, 400));
+}"""
+
+# fill the wire with legal moves: birds the open nests don't need first, then any free bird
+FILL_WIRE = """async () => {
+  for (let k = 0; k < 60 && !over; k++) {
+    const s = liteFromG(), lv = {...G.lv, cap: G.cap}, free = freeMoves(lv, s);
+    const pick = free.find(i => !s.nests.some(n => n && n.c === lv.birds[i].color && n.n < 3)) ?? free[0];
+    if (pick == null) break; const b = G.birds[pick]; await tapCell(b.r * G.lv.C + b.c);
+  }
+  await new Promise(r => setTimeout(r, 500));
 }"""
 
 LAYOUT = """() => {
@@ -133,6 +150,45 @@ with sync_playwright() as p:
     after = page.evaluate('JSON.stringify({s:stateJSON(),t:G.tools,m:G.moves,b:G.usedBooster,u:G.undo.length,c:G.cap})')
     check('daily: back to the level restores board, wire, boosters and history exactly', before == after)
     check('daily: restored birds are drawn where the state says', page.evaluate("G.birds.every(b=>(b.loc.t==='gone')===b.el.hidden)"))
+    ctx.close()
+
+    # ---- daily puzzle: retry after a full wire, and deferred navigation (review R01) ----
+    def daily_fail(page):
+        page.evaluate(FILL_WIRE)
+        return page.evaluate("mode==='daily' && over && !overlay.hidden && card.textContent.includes('The wire is full')")
+    ctx, page, errs = open_page(br, 390, 844, save(12, 33))
+    page.evaluate(PLAY, 'G.moves>=3'); parked_moves = page.evaluate('G.moves')
+    page.click('#dailyBtn'); page.wait_for_timeout(300)
+    check('regression: daily wire-full screen reached with campaign progress parked', daily_fail(page) and page.evaluate('!!parked'))
+    page.click('#retryBtn'); page.wait_for_timeout(300)
+    r = page.evaluate("({daily: mode==='daily', fresh: G.moves===0 && !over && !locked, closed: overlay.hidden})")
+    check('regression: daily Try again after a full wire restarts the puzzle and closes the screen', all(r.values()), r)
+    # repeated clicks must not leave a reset queued that wipes later play
+    if daily_fail(page):
+        page.evaluate("const b=document.querySelector('#retryBtn'); b.click(); b.click();"); page.wait_for_timeout(150)
+        page.evaluate("(async () => { const m = freeMoves({...G.lv, cap: G.cap}, liteFromG())[0], b = G.birds[m]; await tapCell(b.r * G.lv.C + b.c); })()")
+        page.wait_for_timeout(700)
+        check('regression: double Try again queues no later reset', page.evaluate("mode==='daily' && G.moves===1"), page.evaluate('G.moves'))
+    # retry, then back to the campaign: no stale callback drags the player into the daily again
+    daily_fail(page)
+    page.click('#retryBtn'); page.wait_for_timeout(150)
+    if page.evaluate('overlay.hidden'):
+        page.click('#menuBtn'); page.wait_for_timeout(100); page.click('#mBack')
+    else:
+        page.click('#backLvlBtn')
+    page.wait_for_timeout(700)
+    r = page.evaluate("({mode, level, moves: G.moves})")
+    check('regression: Try again then Back to level stays in the campaign with its progress', r == {'mode': 'level', 'level': 12, 'moves': parked_moves}, r)
+    ctx.close()
+    # a daily request deferred by a flight dies when the player restarts before it runs
+    ctx, page, errs = open_page(br, 390, 844, save(12, 33), reduced=False)
+    page.evaluate("""() => { const m = freeMoves({...G.lv, cap: G.cap}, liteFromG())[0], b = G.birds[m];
+        tapCell(b.r * G.lv.C + b.c); }""")
+    deferred = page.evaluate('flights > 0')
+    page.click('#dailyBtn'); page.wait_for_timeout(30)
+    page.click('#menuBtn'); page.wait_for_timeout(50); page.click('#mRestart'); page.wait_for_timeout(900)
+    r = page.evaluate("({mode, moves: G.moves, closed: overlay.hidden})")
+    check('regression: daily request made during a flight is cancelled by a restart', deferred and r == {'mode': 'level', 'moves': 0, 'closed': True}, r)
     ctx.close()
 
     # ---- daily puzzle finished after midnight counts for its own day ----
@@ -333,6 +389,49 @@ with sync_playwright() as p:
     check('egg: Undo brings a hatched egg back', r.get('back'), r)
     ctx.close()
 
+    # ---- permanent help covers every rule, including eggs ----
+    ctx, page, errs = open_page(br, 390, 844, save(3))
+    page.evaluate('showHow()'); page.wait_for_timeout(80)
+    t = page.evaluate("card.textContent")
+    check('help: How to play explains blocking and eggs', 'nothing blocks its path' in t and 'egg' in t.lower() and 'hatches' in t, t[:120])
+    ctx.close()
+
+    # ---- eggs with normal motion: Undo or restart while the hatch animation runs (review R02) ----
+    EGG_STATE = """() => { const nb = G.birds.length;
+      const live = (G.lv.eggs||[]).map((e, k) => [e.r * G.lv.C + e.c, k]).filter(([i, k]) => G.occ[i] === nb + k);
+      const ok = live.every(([i]) => { const c = gridEl.children[i], e = c.querySelector('.egg');
+        return e && e.isConnected && getComputedStyle(e).opacity !== '0' && c.classList.contains('has-egg') && /egg, hatches/.test(c.getAttribute('aria-label')); });
+      return { live: live.length, drawn: gridEl.querySelectorAll('.egg').length, ok }; }"""
+    HATCH_THEN = """async (action) => {
+      const nb = G.birds.length, live = () => (G.lv.eggs||[]).filter((e, k) => G.occ[e.r * G.lv.C + e.c] === nb + k).length;
+      for (const m of solve({...G.lv, cap: G.cap}, liteFromG(), 400000)) {
+        const before = live(), b = G.birds[m];
+        await tapCell(b.r * G.lv.C + b.c);
+        if (live() < before) {
+          const animating = [...gridEl.querySelectorAll('.egg')].some(e => e.getAnimations().some(a => a.playState === 'running'));
+          if (action === 'undo') document.querySelector('#undoBtn').click();
+          else { showMenu(); document.querySelector('#mRestart').click(); }
+          return { m, animating, undone: action !== 'undo' || live() === before };
+        }
+      }
+      return null; }"""
+    ctx, page, errs = open_page(br, 390, 844, save(12), reduced=False)
+    r = page.evaluate(HATCH_THEN, 'undo')
+    page.wait_for_timeout(800)
+    s = page.evaluate(EGG_STATE)
+    check('regression: egg Undo during the hatch animation (normal motion) was exercised', r and r['animating'] and r['undone'], r)
+    check('regression: egg restored by Undo mid-hatch stays drawn and labelled', s['ok'] and s['drawn'] == s['live'] and s['live'] >= 1, s)
+    if r:
+        page.evaluate("async (m) => { const b = G.birds[m]; await tapCell(b.r * G.lv.C + b.c); }", r['m']); page.wait_for_timeout(800)
+        s2 = page.evaluate(EGG_STATE)
+        check('regression: replaying the move after Undo hatches the egg again', s2['live'] == s['live'] - 1 and s2['drawn'] == s2['live'] and s2['ok'], s2)
+    ctx.close()
+    ctx, page, errs = open_page(br, 390, 844, save(12), reduced=False)
+    r = page.evaluate(HATCH_THEN, 'restart'); page.wait_for_timeout(800)
+    s = page.evaluate(EGG_STATE)
+    check('regression: restart during the hatch animation redraws every egg', r and r['animating'] and s['ok'] and s['drawn'] == s['live'] == len(page.evaluate('G.lv.eggs')), [r, s])
+    ctx.close()
+
     ctx, page, errs = open_page(br, 390, 844, save(13))
     r = page.evaluate("""async () => {
       mode = 'level'; level = 13;
@@ -352,10 +451,15 @@ with sync_playwright() as p:
     # ---- the playtest fragment hides the overlay by itself ----
     frag = (ROOT / 'dist' / 'artifact.html').read_text()
     ctx = br.new_context(viewport={'width': 390, 'height': 844}); page = ctx.new_page()
+    watch(page, 'artifact.html fragment')
     page.set_content('<!doctype html><meta charset="utf-8"><body style="margin:0">' + frag + '</body>'); page.wait_for_timeout(300)
     check('artifact.html: overlay hidden on load', page.evaluate("getComputedStyle(document.querySelector('#overlay')).display==='none'"))
     ctx.close()
     br.close()
+
+for scenario, msg in page_errors:
+    check(f'no uncaught page error: {scenario}', False, msg)
+check('no uncaught page errors in any scenario', not page_errors, len(page_errors))
 
 failed = [r for r in results if not r[1]]
 print(f'\n{len(results) - len(failed)} passed, {len(failed)} failed')
