@@ -160,7 +160,7 @@ with sync_playwright() as p:
     ctx.close()
 
     # ---- fail, then keep going ----
-    ctx, page, errs = open_page(br, 390, 844, save(12))
+    ctx, page, errs = open_page(br, 390, 844, save(9))
     page.evaluate("""async () => { for (let k = 0; k < 40 && !over; k++) {
         const s = liteFromG(), lv = {...G.lv, cap: G.cap};
         const wrong = freeMoves(lv, s).find(i => !s.nests.some(n => n && n.c === lv.birds[i].color && n.n < 3));
@@ -207,6 +207,51 @@ with sync_playwright() as p:
     ctx, page, errs = open_page(br, 390, 844, save(8))
     check('level 6+: a booster costs a star', page.evaluate("G.usedBooster=true;G.peak=0;starsFor().n") == 2)
     check('daily: "new" dot shown once the player is past level 6', page.evaluate("!!document.querySelector('#dailyBtn .dot')"))
+    ctx.close()
+
+    # ---- eggs (ADR 0006) ----
+    ctx, page, errs = open_page(br, 390, 844, save(12))
+    r = page.evaluate("""() => ({ eggs: (G.lv.eggs||[]).length, drawn: gridEl.querySelectorAll('.egg').length,
+        labelled: [...gridEl.querySelectorAll('.cell.has-egg')].every(c => c.disabled && /egg, hatches/.test(c.getAttribute('aria-label'))),
+        coach: document.querySelector('#coach').textContent })""")
+    check('level 12: eggs drawn, disabled and labelled', r['eggs'] >= 1 and r['drawn'] == r['eggs'] and r['labelled'], r)
+    check('level 12: coach line introduces eggs', 'eggs' in r['coach'].lower(), r['coach'])
+    r = page.evaluate("""async () => {
+      const nb = G.birds.length;
+      const blocked = G.birds.find(b => b.loc.t === 'grid' && rayBlocker(G.occ, G.lv.R, G.lv.C, b.r, b.c, b.d) >= nb);
+      let tip = null;
+      if (blocked) { await tapCell(blocked.r * G.lv.C + blocked.c); tip = document.querySelector('#coach').textContent; }
+      const lv = {...G.lv, cap: G.cap};
+      for (const m of solve(lv, liteFromG(), 400000)) {
+        const before = gridEl.querySelectorAll('.egg').length, b = G.birds[m];
+        await tapCell(b.r * G.lv.C + b.c); await new Promise(r => setTimeout(r, 300));
+        if (gridEl.querySelectorAll('.egg').length < before) {
+          const hatchedTip = document.querySelector('#coach').textContent;
+          const occFree = (G.lv.eggs||[]).some((e, k) => G.occ[e.r * G.lv.C + e.c] !== nb + k);
+          doUndo(); await new Promise(r => setTimeout(r, 400));
+          return { tip, hatched: true, hatchedTip, occFree, back: gridEl.querySelectorAll('.egg').length === before };
+        }
+      }
+      return { tip, hatched: false } }""")
+    check('egg: blocking a bird explains the egg', r['tip'] is None or 'egg' in r['tip'], r)
+    check('egg: hatches when its nest fills, clearing its cell', r['hatched'] and r['occFree'], r)
+    check('egg: Undo brings a hatched egg back', r.get('back'), r)
+    ctx.close()
+
+    ctx, page, errs = open_page(br, 390, 844, save(13))
+    r = page.evaluate("""async () => {
+      mode = 'level'; level = 13;
+      setupLevel({ R: 1, C: 3, cap: 5, open: 1, queue: [0, 1], L: 13,
+        birds: [{ r: 0, c: 0, d: 1, color: 1 }, { r: 0, c: 2, d: 1, color: 1 }], eggs: [{ r: 0, c: 1, color: 0 }] });
+      await new Promise(r => setTimeout(r, 200));
+      await tapCell(2); await new Promise(r => setTimeout(r, 300));
+      const shown = !overlay.hidden && card.textContent.includes('No bird can fly');
+      const undo = !!document.querySelector('#stUndo');
+      if (undo) document.querySelector('#stUndo').click();
+      await new Promise(r => setTimeout(r, 400));
+      return { shown, undo, resumed: overlay.hidden && !over && G.birds.every(b => b.loc.t === 'grid') } }""")
+    check('dead end: "No bird can fly" screen with Undo', r['shown'] and r['undo'], r)
+    check('dead end: Undo resumes the level', r['resumed'], r)
     ctx.close()
 
     # ---- the playtest fragment hides the overlay by itself ----
