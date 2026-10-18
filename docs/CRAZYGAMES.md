@@ -5,7 +5,7 @@ Requirements as of October 2026, from the [CrazyGames developer docs](https://do
 ## Build
 
 - [x] Single file `dist/index.html` (HTML5). Initial download ≤ 50 MB, total ≤ 250 MB, ≤ 1,500 files. We are at about 150 KB, one file.
-- [x] Works in a responsive 16:9 iframe (two-column layout on wide screens) and is legible at devicePixelRatio 1 as well as on phones. Checked at 360×640, 390×844, 800×600, 1024×576, 1280×720 and 1920×1080.
+- [x] Works in a responsive 16:9 iframe (two-column layout on wide screens) and is legible at devicePixelRatio 1 as well as on phones. Checked at 360×640, 390×844, 800×450, 821×462, 907×510, 800×600, 1024×576, 1280×720 and 1920×1080; every menu and end screen fits or scrolls, and menus close with Escape or a tap outside.
 - [x] Movement uses time, not frame count (Web Animations and timers only), so it behaves the same at 60, 144 and 165 Hz.
 - [x] No console errors. No network requests at all (fonts are inlined).
 - [x] Content suitable for PEGI 12 / age 13+ (no violence, no text chat, no user content).

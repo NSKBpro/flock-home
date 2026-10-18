@@ -25,7 +25,7 @@ Every bird colour also has its own symbol, so the game is fully playable with co
 ## Controls
 
 - Tap or click a bird to make it fly.
-- Keyboard: Tab to move between birds, Enter or Space to make the selected bird fly.
+- Keyboard: Tab or the arrow keys to move between birds, Enter or Space to make the selected bird fly, Escape to close a menu.
 - Undo, Hint and +1 Perch are at the bottom of the screen.
 
 ## Tags / categories
