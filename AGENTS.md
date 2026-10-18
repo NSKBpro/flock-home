@@ -39,7 +39,11 @@ npm run ui         # browser regression checks on dist/index.html (needs a build
 
 1. `npm test` and `npm run build` pass.
 2. For generation or rule changes: `npm run sim` and compare win rates with the targets in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md#difficulty-curve).
-3. For UI changes: `npm run build && npm run ui` must pass (layout at portal and phone sizes including late levels, dialogs, daily puzzle, undo, fail and continue, page-vs-engine parity). Then open `dist/index.html` at phone width (≈390×844) and desktop and play a level to the win screen and one to the "wire is full" screen.
+3. For UI changes: `npm run build && npm run ui` must pass; CI runs it on every pull request too. It covers layout at portal and phone sizes including late levels, dialogs, daily puzzle, undo, eggs, fail and continue, page-vs-engine parity, and one check per fixed bug. Then open `dist/index.html` at phone width (≈390×844) and desktop and play a level to the win screen and one to the "wire is full" screen.
+
+## Bugs
+
+Every bug fix comes with a test that **fails before the fix and passes after it**: an engine test in `tests/engine.test.mjs` for rules and generation, a check in `tools/ui-check.py` for anything on the page (name it `regression: …`). Reproduce the bug first, write the test, see it fail, then fix. To prove a check against an older build: `python3 tools/ui-check.py path/to/old/index.html`. CI runs both suites on every pull request.
 
 ## Documentation duties
 
