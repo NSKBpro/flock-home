@@ -9,8 +9,9 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => readFileSync(join(root, p), 'utf8');
 
-// Strip the CommonJS export line: in the browser these files run as plain scripts.
-const stripExports = src => src.replace(/^if \(typeof module !== 'undefined'\).*$/m, '');
+// Strip the CommonJS export block (always the last statement of the file):
+// in the browser these files run as plain scripts.
+const stripExports = src => src.replace(/^if \(typeof module !== 'undefined'\)[\s\S]*$/m, '');
 
 const engine = stripExports(read('src/engine.js'));
 const levels = existsSync(join(root, 'src/levels.js')) ? stripExports(read('src/levels.js')) : 'const LEVEL_PACK = [];';

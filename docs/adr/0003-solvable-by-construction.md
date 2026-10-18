@@ -1,6 +1,6 @@
 # 0003 — Levels are solvable by construction
 
-**Status:** Accepted, 18 Oct 2026
+**Status:** Accepted, 18 Oct 2026. Extended by [ADR 0005](0005-one-open-nest-and-curated-pack.md): the shipped levels come from a curated pack built with this same method.
 
 ## Context
 

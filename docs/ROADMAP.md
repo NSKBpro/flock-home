@@ -10,7 +10,7 @@ The success measure for the first phase is **an invitation to Full Launch**, not
 - [x] Endless levels that are always solvable
 - [x] Boosters: Undo, Hint, +1 Perch
 - [x] Ad placeholders: rewarded boosters, continue after a full wire, interstitial every 3 levels
-- [ ] Make the wire matter: levels where some birds *must* wait, with a sawtooth difficulty curve
+- [x] Make the wire matter: one open nest, 100 curated levels with measured difficulty and a sawtooth curve ([ADR 0005](adr/0005-one-open-nest-and-curated-pack.md))
 - [ ] Owner plays 10–15 levels and writes down what feels boring or unfair
 - [ ] 3–5 friends play on their phones; note where they stop
 - **Done when:** testers ask for "one more level" without being prompted

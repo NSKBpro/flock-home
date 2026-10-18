@@ -4,7 +4,7 @@ Requirements as of October 2026, from the [CrazyGames developer docs](https://do
 
 ## Build
 
-- [ ] Upload `dist/index.html` (HTML5). Initial download ≤ 50 MB, total ≤ 250 MB, ≤ 1,500 files. We are at about 42 KB.
+- [ ] Upload `dist/index.html` (HTML5). Initial download ≤ 50 MB, total ≤ 250 MB, ≤ 1,500 files. We are at about 66 KB.
 - [ ] Works in a responsive 16:9 iframe and is legible at devicePixelRatio 1 (desktop) as well as on phones.
 - [ ] Movement uses time, not frame count, so it behaves the same at 60, 144 and 165 Hz.
 - [ ] No console errors. No failed network requests.
