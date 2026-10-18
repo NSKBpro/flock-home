@@ -54,7 +54,7 @@ button{font:inherit;color:inherit}
 .wire .cable path{fill:none;stroke:var(--wire);stroke-width:3;transition:stroke .2s}
 .wire .cable .pole{fill:var(--line)}
 .wire.tense .cable path{stroke:var(--warn)}
-.perch{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:2px solid var(--wire);background:var(--sky-bot)}
+.perch{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:2px solid #6E93AE;background:var(--sky-bot)}
 .wire.tense .perch{border-color:var(--warn)}
 .wire-label{position:absolute;right:0;top:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 .wire.tense .wire-label{color:var(--warn)}
@@ -80,15 +80,18 @@ button{font:inherit;color:inherit}
 .bi svg{width:100%;height:100%;display:block;overflow:visible}
 .bi.d0{transform:rotate(-90deg)}.bi.d2{transform:rotate(90deg)}.bi.d3{transform:scaleX(-1)}
 .bird .legs{display:none}.bird.perched .legs{display:inline}
-.bird.perched .streak,.bird.flying .streak{display:none}
+.bird.upright .streak,.bird.flying .streak{display:none}
+/* the colour symbol stays upright on screen, so it never reads as a flight arrow */
+.bird .sym{transform-box:fill-box;transform-origin:center;transition:transform .16s ease}
+.bi.d0 .sym{transform:rotate(90deg)}.bi.d2 .sym{transform:rotate(-90deg)}
 .bird .wing{transform-box:fill-box;transform-origin:50% 30%}
 .bird.flying .wing{animation:flap .14s ease-in-out infinite alternate}
 @keyframes flap{to{transform:scaleY(-.7)}}
 .lane{position:absolute;background:var(--warn);border-radius:4px;opacity:.85}
 .feather{position:absolute;width:10px;height:16px;border-radius:50% 50% 50% 50%/70% 70% 30% 30%}
 
-.overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
-.card{background:var(--panel-hi);border-radius:24px;padding:24px 20px 20px;width:min(340px,100%);text-align:center;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.overlay{position:absolute;inset:0;z-index:20;display:flex;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.card{margin:auto;box-sizing:border-box;background:var(--panel-hi);border-radius:24px;padding:24px 20px 20px;width:min(340px,100%);text-align:center;display:grid;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .card h2{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.05;margin:0;text-wrap:balance}
 .card p{margin:0;color:var(--muted);font-size:14px;line-height:1.45;text-wrap:balance}
 .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent)}
@@ -96,6 +99,7 @@ button{font:inherit;color:inherit}
 .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--cell-dot)}
 .btn.row{height:46px;font-weight:600;font-size:15px;background:var(--panel);justify-content:flex-start;padding-inline:16px}
+.btn.danger{background:transparent;color:var(--warn);box-shadow:inset 0 0 0 1.5px var(--warn)}
 .btn svg{width:18px;height:18px}
 /* stars */
 .total{display:flex;align-items:center;gap:5px;height:40px;padding:0 12px;border-radius:12px;background:var(--panel);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
@@ -103,6 +107,12 @@ button{font:inherit;color:inherit}
 .starrow{display:flex;justify-content:center;gap:10px;margin:-2px 0 2px}
 .starrow svg{width:46px;height:46px}
 .starrow .mid{transform:translateY(-8px)}
+/* level select */
+.lvgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:min(300px,46dvh);overflow-y:auto;padding:2px;overscroll-behavior:contain}
+.lvb{appearance:none;border:0;border-radius:12px;background:var(--panel);height:52px;display:grid;place-items:center;align-content:center;gap:1px;cursor:pointer;font-weight:700;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+.lvb small{font-size:10px;letter-spacing:.05em;color:var(--accent);font-weight:700;min-height:12px}
+.lvb.storm{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.lvb[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}.lvb[aria-current="true"] small{color:var(--accent-ink)}
 .tips{display:grid;gap:4px;margin:0;padding:0;list-style:none;font-size:13px;color:var(--muted)}
 /* daily puzzle */
 .ibtn{position:relative}
@@ -145,6 +155,15 @@ button{font:inherit;color:inherit}
   .top{grid-area:top}.coach{grid-area:coach;margin:18px 0 12px}.nests{grid-area:nests;max-width:none}.queue{grid-area:queue;margin-top:12px}
   .wire{grid-area:wire;margin-top:14px}.field{grid-area:field;padding-block:8px}.tools{grid-area:tools}
   .slot{height:104px}.toast{bottom:24px}
+}
+@media (max-height:540px){
+  .slot{height:80px}
+  .overlay{padding-block:10px}
+  .card{padding:14px 16px;gap:8px;border-radius:20px}
+  .card h2{font-size:22px}.card p{font-size:13px}
+  .btn{height:40px;font-size:14px}.btn.row{height:36px;font-size:14px}
+  .wear svg{width:40px;height:40px}.starrow svg{width:36px;height:36px}.newunlock svg{width:36px;height:36px}
+  .lvb{height:44px}
 }
 </style>
 
@@ -198,8 +217,11 @@ let level=Math.max(1,store.get('fh.level',1)|0), soundOn=store.get('fh.sound',tr
 let best=store.get('fh.stars',{});if(!best||typeof best!=='object')best={};
 let daily=store.get('fh.daily',{});if(!daily||typeof daily!=='object')daily={};   // {last:'YYYY-MM-DD', streak:n, top:n}
 let wear=store.get('fh.wear','');                                                  // equipped accessory id, '' = none
+// highest level the player can pick in the level list (older saves only have fh.level and fh.stars)
+let maxLevel=Math.max(level,store.get('fh.max',1)|0,...Object.keys(best).map(k=>(+k|0)+1));
 let mode='level';                                                                  // 'level' or 'daily'
 let G=null, locked=false, over=false, flights=0;
+let runId=0;   // bumped by setupLevel; async move animations stop if the level changed under them
 
 /* ---------- drawing ---------- */
 function sym(s,fill){
@@ -213,7 +235,8 @@ function sym(s,fill){
     default:return `<rect x="0" y="3" width="10" height="4" rx="1.5" ${f}/>`;
   }
 }
-const symSvg=(i,fill)=>`<svg viewBox="0 0 10 10" aria-hidden="true">${sym(PAL[i].sym,fill)}</svg>`;
+const INK='rgba(20,15,10,.82)';
+const symSvg=(i,fill=INK)=>`<svg viewBox="0 0 10 10" aria-hidden="true">${sym(PAL[i].sym,fill)}</svg>`;
 function birdSVG(ci,acc=wear){
   const p=PAL[ci];
   return `<svg viewBox="0 0 40 40" aria-hidden="true">
@@ -223,9 +246,9 @@ function birdSVG(ci,acc=wear){
   <ellipse cx="18" cy="22" rx="11.2" ry="8.6" fill="${p.hex}"/>
   <path class="wing" d="M10 20.5 Q17 13.5 24.5 20.5 Q17 27.5 10 20.5Z" fill="${p.dark}" opacity=".7"/>
   <circle cx="27.6" cy="15.4" r="7.2" fill="${p.hex}"/>
-  <polygon points="33.8,13.2 39.4,15.9 33.8,18.6" fill="#3A2A1C"/>
+  <polygon points="33.4,12.6 40,15.9 33.4,19.2" fill="#FF9F43" stroke="#16110C" stroke-width=".8" stroke-linejoin="round"/>
   <circle cx="29.7" cy="13.8" r="1.8" fill="#16110C"/><circle cx="30.2" cy="13.2" r=".6" fill="#fff"/>
-  <g transform="translate(14.6 21.4) scale(.62)">${sym(p.sym,'rgba(255,255,255,.92)')}</g>
+  <g transform="translate(14.6 21.4) scale(.62)"><g class="sym">${sym(p.sym,INK)}</g></g>
   ${acc?ACC_SVG[acc]||'':''}
 </svg>`;
 }
@@ -255,7 +278,9 @@ const BOWL=c=>`<svg class="bowl" viewBox="0 0 132 30" aria-hidden="true"><path d
 
 /* ---------- audio ---------- */
 let ac=null;
-function ensureAudio(){if(!soundOn)return;try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}}
+function ensureAudio(){if(!soundOn)return;try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state!=='running')ac.resume()}catch(e){}}
+// iOS only unlocks audio from touchend/click, not from pointerdown
+['touchend','click'].forEach(t=>document.addEventListener(t,ensureAudio,{passive:true,capture:true}));
 function tone(f0,f1,dur,type='sine',vol=.1,delay=0){
   if(!soundOn||!ac)return;
   const t=ac.currentTime+delay,o=ac.createOscillator(),g=ac.createGain();
@@ -289,7 +314,7 @@ const Ads={
 
 /* ---------- haptics (Android browsers; iOS ignores it) ---------- */
 function buzz(pattern){if(!vibeOn)return;try{navigator.vibrate&&navigator.vibrate(pattern)}catch(e){}}
-const STAR=(on)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="${on?'var(--accent)':'var(--cell-dot)'}" stroke="${on?'#B98A1E':'none'}" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+const STAR=(on)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="${on?'var(--accent)':'var(--panel)'}" stroke="${on?'#B98A1E':'#6E93AE'}" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
 const totalStars=()=>Object.values(best).reduce((a,b)=>a+(+b||0),0);
 function paintTotal(){const t=totalStars();$('#starTotal').innerHTML=STAR(true)+'<span>'+t+'</span>';$('#starTotal').setAttribute('aria-label',t+' stars earned')}
 const nextUnlock=t=>ACC.find(a=>a.stars>t);
@@ -321,6 +346,7 @@ function startDaily(){
 }
 function startLevel(L){
   mode='level';level=L;store.set('fh.level',L);
+  if(L>maxLevel){maxLevel=L;store.set('fh.max',L)}
   setupLevel(levelFor(L,typeof LEVEL_PACK!=='undefined'?LEVEL_PACK:null));
 }
 function setupLevel(lv){
@@ -328,7 +354,8 @@ function setupLevel(lv){
   const open=lv.open||2;
   G={lv,birds:lv.birds.map((b,i)=>({...b,id:i,loc:{t:'grid'}})),occ:new Int16Array(lv.R*lv.C).fill(-1),
      nests:Array.from({length:open},(_,i)=>i<lv.queue.length?{c:lv.queue[i],filled:[]}:null),qi:Math.min(open,lv.queue.length),
-     wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0,usedBooster:false};
+     wire:[],cap:lv.cap,undo:[],tools:{undo:3,hint:2,perch:1},continues:0,peak:0,moves:0,usedBooster:false,usedRewardedAd:false};
+  runId++;
   G.birds.forEach(b=>G.occ[b.r*lv.C+b.c]=b.id);
   locked=false;over=false;flights=0;
   const isDaily=mode==='daily';
@@ -369,13 +396,13 @@ function renderNest(i){
   const slot=nestsEl.children[i],n=G.nests[i];
   if(!n){slot.innerHTML=G.qi>=G.lv.queue.length?'<div class="done">All home</div>':'';return}
   const p=PAL[n.c];
-  slot.innerHTML=`<div class="nest" style="--c:${p.hex}" aria-label="${p.name} nest"><span class="tag">${symSvg(n.c,'rgba(255,255,255,.95)')}</span><div class="seats"><span class="seat"></span><span class="seat"></span><span class="seat"></span></div>${BOWL(p.hex)}</div>`;
+  slot.innerHTML=`<div class="nest" style="--c:${p.hex}" aria-label="${p.name} nest"><span class="tag">${symSvg(n.c)}</span><div class="seats"><span class="seat"></span><span class="seat"></span><span class="seat"></span></div>${BOWL(p.hex)}</div>`;
 }
 function renderQueue(){
   const rest=G.lv.queue.slice(G.qi);
   if(!rest.length){queueEl.innerHTML='Last nest';return}
   const shown=rest.slice(0,6);
-  queueEl.innerHTML='Up next'+shown.map(c=>`<span class="chip" style="background:${PAL[c].hex}" title="${PAL[c].name}">${symSvg(c,'rgba(255,255,255,.95)')}</span>`).join('')+(rest.length>6?`<span class="more">+${rest.length-6}</span>`:'');
+  queueEl.innerHTML='Up next'+shown.map(c=>`<span class="chip" style="background:${PAL[c].hex}" title="${PAL[c].name}">${symSvg(c)}</span>`).join('')+(rest.length>6?`<span class="more">+${rest.length-6}</span>`:'');
 }
 function buildWire(){
   wireEl.querySelectorAll('.perch').forEach(p=>p.remove());
@@ -413,8 +440,8 @@ function anchorFor(b){
   return {x,y,s};
 }
 function orient(b){
-  const bi=b.el.firstChild,perched=b.loc.t!=='grid';
-  bi.className='bi'+(perched?'':' d'+b.d);b.el.classList.toggle('perched',perched);
+  const bi=b.el.firstChild,upright=b.loc.t!=='grid';
+  bi.className='bi'+(upright?'':' d'+b.d);b.el.classList.toggle('upright',upright);b.el.classList.toggle('perched',b.loc.t==='wire');
 }
 function setBird(b,animate=false,via=null,dur=480){
   const el=b.el,a=anchorFor(b);
@@ -452,8 +479,8 @@ async function tapCell(i){
   const b=G.birds[id],bl=rayBlocker(G.occ,G.lv.R,G.lv.C,b.r,b.c,b.d);
   if(bl>=0){blockedFx(b,G.birds[bl]);return}
   pushUndo();G.moves++;
-  const via=exitPoint(b);
-  G.occ[i]=-1;cellAria(i);
+  const via=exitPoint(b),run=runId,hadFocus=document.activeElement===gridEl.children[i];
+  G.occ[i]=-1;cellAria(i);if(hadFocus)focusNear(b.r,b.c);
   const ni=G.nests.findIndex(n=>n&&n.c===b.color&&n.filled.length<3);
   let full=false,wireFull=false;
   if(ni>=0){const n=G.nests[ni];n.filled.push(id);b.loc={t:'nest',n:ni,k:n.filled.length-1};full=n.filled.length===3}
@@ -462,13 +489,14 @@ async function tapCell(i){
   updateWireState();updateTools();sfx.chirp(b.color);buzz(8);hideHand();
   b.el.classList.add('flying');flights++;
   await setBird(b,true,via,520);
+  if(run!==runId)return;   // level restarted or switched during the flight
   b.el.classList.remove('flying');flights--;
-  if(full){await completeNest(ni);locked=false}
-  if(wireFull){if(G.wire.length>=G.cap){await sleep(T(160));showFail();return}locked=false}
+  if(full){await completeNest(ni,run);if(run!==runId)return;locked=false}
+  if(wireFull){if(G.wire.length>=G.cap){await sleep(T(160));if(run!==runId)return;showFail();return}locked=false}
   checkWin();updateHand();
 }
-async function completeNest(ni){
-  await sleep(T(130));
+async function completeNest(ni,run=runId){
+  await sleep(T(130));if(run!==runId)return;
   const slot=nestsEl.children[ni],n=G.nests[ni],birds=n.filled.map(id=>G.birds[id]);
   sfx.nest();
   buzz([12,40,12]);
@@ -476,11 +504,13 @@ async function completeNest(ni){
   if(nestEl)anims.push(nestEl.animate([{transform:'none',opacity:1},{transform:'translateY(-36px) scale(.92)',opacity:0}],{duration:T(380),easing:'ease-in',fill:'forwards'}));
   birds.forEach((b,j)=>{b.el.classList.add('flying');anims.push(b.el.animate([{transform:'none',opacity:1},{transform:`translate(${(j-1)*34}px,-130px) scale(.7)`,opacity:0}],{duration:T(440),delay:T(j*40),easing:'ease-in',fill:'forwards'}))});
   await Promise.all(anims.map(a=>a.finished.catch(()=>{})));
+  if(run!==runId)return;
   birds.forEach(b=>{b.loc={t:'gone'};b.el.getAnimations().forEach(a=>a.cancel());b.el.classList.remove('flying');b.el.hidden=true});
   G.nests[ni]=G.qi<G.lv.queue.length?{c:G.lv.queue[G.qi++],filled:[]}:null;
   renderNest(ni);renderQueue();
   const fresh=slot.querySelector('.nest');
   if(fresh)await fresh.animate([{transform:'translateY(-26px)',opacity:0},{transform:'none',opacity:1}],{duration:T(280),easing:'cubic-bezier(.2,.9,.3,1.25)'}).finished.catch(()=>{});
+  if(run!==runId)return;
   // keep birds already sitting in the other nest anchored after the re-render
   G.birds.forEach(b=>{if(b.loc.t==='nest'&&b.loc.n!==ni)setBird(b,false)});
   const nn=G.nests[ni];if(!nn)return;
@@ -493,13 +523,13 @@ async function completeNest(ni){
     sfx.hop();updateWireState();
     b.el.classList.add('flying');
     const ps=[setBird(b,true,null,340)];G.wire.forEach(wid=>ps.push(setBird(G.birds[wid],true,null,260)));
-    await Promise.all(ps);b.el.classList.remove('flying');
+    await Promise.all(ps);if(run!==runId)return;b.el.classList.remove('flying');
   }
-  if(nn.filled.length===3)await completeNest(ni);
+  if(nn.filled.length===3)await completeNest(ni,run);
 }
 function checkWin(){
   if(over||!G.birds.every(b=>b.loc.t==='gone'))return;
-  over=true;sfx.win();buzz([20,60,20,60,40]);feathers();setTimeout(showWin,T(650));
+  const run=runId;over=true;sfx.win();buzz([20,60,20,60,40]);feathers();setTimeout(()=>{if(run===runId)showWin()},T(650));
 }
 function blockedFx(b,blk){
   ensureAudio();sfx.bonk();buzz(25);
@@ -512,16 +542,34 @@ function blockedFx(b,blk){
   ln.animate([{opacity:.9},{opacity:.9,offset:.5},{opacity:0}],{duration:T(650)}).finished.then(()=>ln.remove(),()=>ln.remove());
 }
 
+// Keyboard play: after a bird leaves, focus the nearest bird still on the grid (its cell gets disabled,
+// which would otherwise drop focus to the page). Arrow keys move between birds.
+function birdCells(){return [...gridEl.children].filter(el=>!el.disabled)}
+function focusNear(r,c){
+  const C=G.lv.C;let best=null,bd=Infinity;
+  for(const el of birdCells()){const i=+el.dataset.i,d=Math.hypot(Math.floor(i/C)-r,i%C-c);if(d<bd){bd=d;best=el}}
+  if(best)best.focus({preventScroll:true});
+}
+const ARROWS={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+function arrowMove(from,key){
+  const C=G.lv.C,[dr,dc]=ARROWS[key],i=+from.dataset.i,r=Math.floor(i/C),c=i%C;let best=null,bs=Infinity;
+  for(const el of birdCells()){
+    const j=+el.dataset.i,rr=Math.floor(j/C)-r,cc=j%C-c,along=rr*dr+cc*dc,across=Math.abs(rr*dc)+Math.abs(cc*dr);
+    if(along<=0)continue;const sc=along+2*across;if(sc<bs){bs=sc;best=el}
+  }
+  if(best)best.focus({preventScroll:true});
+}
+
 /* ---------- tools ---------- */
-function pushUndo(){G.undo.push(JSON.stringify({locs:G.birds.map(b=>b.loc),occ:[...G.occ],nests:G.nests,qi:G.qi,wire:G.wire}));if(G.undo.length>40)G.undo.shift()}
+function pushUndo(){G.undo.push(JSON.stringify({locs:G.birds.map(b=>b.loc),occ:[...G.occ],nests:G.nests,qi:G.qi,wire:G.wire,peak:G.peak}));if(G.undo.length>40)G.undo.shift()}
 function doUndo(){
   if(locked||over||flights>0||!G.undo.length)return;
-  if(G.tools.undo<=0){if(Ads.enabled)Ads.rewarded('undo',()=>{G.tools.undo++;updateTools()});else toast('No undos left on this level');return}
+  if(G.tools.undo<=0){if(Ads.enabled)Ads.rewarded('undo',()=>{G.usedRewardedAd=true;G.tools.undo++;doUndo()});else toast('No undos left on this level');return}
   G.tools.undo--;G.usedBooster=true;restore(G.undo.pop());toast('Move undone');
 }
 function restore(json){
   const s=JSON.parse(json);
-  G.birds.forEach((b,i)=>b.loc=s.locs[i]);G.occ=Int16Array.from(s.occ);G.nests=s.nests;G.qi=s.qi;G.wire=s.wire;
+  G.birds.forEach((b,i)=>b.loc=s.locs[i]);G.occ=Int16Array.from(s.occ);G.nests=s.nests;G.qi=s.qi;G.wire=s.wire;G.peak=s.peak??G.peak;
   renderNests();renderQueue();for(let i=0;i<G.occ.length;i++)cellAria(i);
   G.birds.forEach(b=>setBird(b,true,null,300));updateWireState();updateTools();updateHand();
 }
@@ -531,25 +579,20 @@ function liteFromG(){
 }
 function doHint(){
   if(locked||over||flights>0)return;
-  if(G.tools.hint<=0){if(Ads.enabled)Ads.rewarded('hint',()=>{G.tools.hint++;updateTools()});else toast('No hints left on this level');return}
+  if(G.tools.hint<=0){if(Ads.enabled)Ads.rewarded('hint',()=>{G.usedRewardedAd=true;G.tools.hint++;doHint()});else toast('No hints left on this level');return}
   const lv={...G.lv,cap:G.cap},s=liteFromG();
   const path=solve(lv,s,40000);
-  let m=path&&path.length?path[0]:null;
-  if(m==null){
-    const free=freeMoves(lv,s);
-    m=free.find(i=>s.nests.some(n=>n&&n.c===lv.birds[i].color&&n.n<3));
-    if(m==null)m=free[0];
-    if(m!=null)toast('No sure way out from here. Try Undo.');
-  }
-  if(m==null)return;
+  // No winning line from here: say so and keep the hint (and the star) instead of pointing at a losing move.
+  if(!path||!path.length){toast(G.undo.length?'No way out from here. Try Undo.':'No way out from here. Try again.');return}
+  const m=path[0];
   G.tools.hint--;G.usedBooster=true;updateTools();
   const b=G.birds[m],cell=gridEl.children[b.r*G.lv.C+b.c];
   cell.classList.remove('hint');void cell.offsetWidth;cell.classList.add('hint');
   setTimeout(()=>cell.classList.remove('hint'),2800);
 }
 function doPerch(){
-  if(over||G.cap>=9)return;
-  if(G.tools.perch<=0){if(Ads.enabled)Ads.rewarded('perch',()=>{G.tools.perch++;updateTools()});else toast('No extra perches left on this level');return}
+  if(locked||over||flights>0||G.cap>=9)return;
+  if(G.tools.perch<=0){if(Ads.enabled)Ads.rewarded('perch',()=>{G.usedRewardedAd=true;G.tools.perch++;doPerch()});else toast('No extra perches left on this level');return}
   G.tools.perch--;G.usedBooster=true;addPerch(1);toast('+1 perch on the wire');
 }
 function addPerch(n){
@@ -558,8 +601,9 @@ function addPerch(n){
 }
 
 /* ---------- overlays ---------- */
-function showOverlay(html){card.innerHTML=html;overlay.hidden=false;const f=card.querySelector('button');if(f)f.focus({preventScroll:true})}
-function hideOverlay(){overlay.hidden=true;card.innerHTML=''}
+let overlayDismiss=false;   // menus can be closed with Escape or a tap outside; win/fail screens cannot
+function showOverlay(html,dismiss=false){card.innerHTML=html;overlayDismiss=dismiss;overlay.hidden=false;overlay.scrollTop=0;const f=card.querySelector('button');if(f)f.focus({preventScroll:true})}
+function hideOverlay(){overlay.hidden=true;card.innerHTML='';overlayDismiss=false}
 let toastT=null;
 function toast(msg){
   document.querySelectorAll('.toast').forEach(t=>t.remove());
@@ -591,6 +635,7 @@ function showWin(){
   if(mode==='daily')return showDailyWin();
   const lv=G.lv,{n,tips}=starsFor(),prev=+best[level]||0,before=totalStars();
   if(n>prev){best[level]=n;store.set('fh.stars',best);paintTotal()}
+  if(level+1>maxLevel){maxLevel=level+1;store.set('fh.max',maxLevel)}
   const after=totalStars(),unlocked=ACC.filter(a=>a.stars>before&&a.stars<=after).pop(),next=nextUnlock(after);
   const prevStep=[...ACC].reverse().find(a=>a.stars<=after)?.stars||0;
   const extra=unlocked
@@ -606,17 +651,20 @@ function showWin(){
     <button class="btn ghost" id="replayBtn">${n<3?'Play again for 3 stars':'Play again'}</button>`);
   if(unlocked)$('#wearBtn').onclick=()=>{equip(unlocked.id);$('#wearBtn').textContent='Wearing it';$('#wearBtn').disabled=true};
   if(!RM)card.querySelectorAll('.starrow > span').forEach((el,i)=>el.animate([{transform:(i===1?'translateY(-8px) ':'')+'scale(0)',opacity:0},{transform:(i===1?'translateY(-8px) ':'')+'scale(1.15)',opacity:1,offset:.7},{transform:(i===1?'translateY(-8px) ':'')+'scale(1)',opacity:1}],{duration:380,delay:120+i*140,easing:'ease-out',fill:'backwards'}));
-  $('#nextBtn').onclick=()=>{const L=level+1;if(L>=5&&L%3===0)Ads.midgame(()=>startLevel(L));else startLevel(L)};
+  $('#nextBtn').onclick=()=>{const L=level+1;if(L>=5&&L%3===0&&!G.usedRewardedAd)Ads.midgame(()=>startLevel(L));else startLevel(L)};
   $('#replayBtn').onclick=()=>startLevel(level);
 }
 function showFail(){
   over=true;sfx.fail();buzz(120);hideHand();
   const canGo=G.continues<2&&G.cap<9;
-  showOverlay(`<span class="eyebrow">Level ${level}</span><h2>The wire is full</h2>
+  const isDaily=mode==='daily';
+  showOverlay(`<span class="eyebrow">${isDaily?'Daily puzzle':`Level ${level}`}</span><h2>The wire is full</h2>
     <p>All ${G.cap} perches are taken and none of these birds’ nests is open yet.</p>
     ${canGo?`<button class="btn primary" id="contBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${Ads.enabled?'Watch ad':'Keep going'} · +2 perches</button>`:''}
-    <button class="btn ${canGo?'ghost':'primary'}" id="retryBtn">Try again</button>`);
-  if(canGo)$('#contBtn').onclick=()=>{const go=()=>{hideOverlay();G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!')};Ads.enabled?Ads.rewarded('continue',go):go()};
+    <button class="btn ${canGo?'ghost':'primary'}" id="retryBtn">Try again</button>
+    ${isDaily?`<button class="btn ghost" id="backLvlBtn">Back to level ${level}</button>`:''}`);
+  if(isDaily)$('#backLvlBtn').onclick=()=>startLevel(level);
+  if(canGo)$('#contBtn').onclick=()=>{const go=()=>{if(Ads.enabled)G.usedRewardedAd=true;hideOverlay();G.continues++;over=false;locked=false;addPerch(2);toast('+2 perches. Keep going!')};Ads.enabled?Ads.rewarded('continue',go):go()};
   $('#retryBtn').onclick=()=>mode==='daily'?startDaily():startLevel(level);
 }
 function equip(id){
@@ -630,23 +678,53 @@ function showWardrobe(){
       <button class="wear" data-id="" aria-pressed="${!wear}"><svg viewBox="-2 -4 44 44">${birdSVG(3,'').replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg>None</button>
       ${ACC.map(a=>`<button class="wear" data-id="${a.id}" aria-pressed="${wear===a.id}" ${t<a.stars?'disabled':''}><svg viewBox="-2 -4 44 44">${birdSVG(3,a.id).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg>${t<a.stars?`${a.stars}★`:a.name}</button>`).join('')}
     </div>
-    <button class="btn primary" id="wClose">Done</button>`);
+    <button class="btn primary" id="wClose">Done</button>`,true);
   card.querySelectorAll('.wear:not(:disabled)').forEach(b=>b.onclick=()=>{equip(b.dataset.id);showWardrobe()});
   $('#wClose').onclick=hideOverlay;
 }
+const canVibrate='vibrate' in navigator;
 function showMenu(){
+  const isDaily=mode==='daily';
   showOverlay(`<h2>Menu</h2>
-    <button class="btn row" id="mDaily">Daily puzzle${daily.last===dayKey()?' · solved today':''}</button>
+    ${isDaily?`<button class="btn row" id="mBack">Back to level ${level}</button>`
+             :`<button class="btn row" id="mDaily">Daily puzzle${daily.last===dayKey()?' · solved today':''}</button>`}
+    <button class="btn row" id="mLevels">Levels</button>
     <button class="btn row" id="mWear">Wardrobe · ${totalStars()}★</button>
     <button class="btn row" id="mHow">How to play</button>
-    <button class="btn row" id="mRestart">${mode==='daily'?'Restart today’s puzzle':`Restart level ${level}`}</button>
-    <button class="btn row" id="mVibe">Vibration: ${vibeOn?'on':'off'}</button>
+    <button class="btn row" id="mRestart">${isDaily?'Restart today’s puzzle':`Restart level ${level}`}</button>
+    ${canVibrate?`<button class="btn row" id="mVibe">Vibration: ${vibeOn?'on':'off'}</button>`:''}
     <button class="btn row" id="mReset">Start over from level 1</button>
-    <button class="btn primary" id="mClose">Back to the game</button>`);
-  $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>mode==='daily'?startDaily():startLevel(level);
-  $('#mDaily').onclick=startDaily;$('#mWear').onclick=showWardrobe;
-  $('#mVibe').onclick=()=>{vibeOn=!vibeOn;store.set('fh.vibe',vibeOn);if(vibeOn)buzz(30);showMenu()};
-  $('#mReset').onclick=()=>{best={};store.set('fh.stars',best);wear='';store.set('fh.wear','');startLevel(1)};$('#mClose').onclick=hideOverlay;
+    <button class="btn primary" id="mClose">Back to the game</button>`,true);
+  $('#mHow').onclick=showHow;$('#mRestart').onclick=()=>isDaily?startDaily():startLevel(level);
+  if(isDaily)$('#mBack').onclick=()=>startLevel(level);else $('#mDaily').onclick=startDaily;
+  $('#mLevels').onclick=showLevels;$('#mWear').onclick=showWardrobe;
+  if(canVibrate)$('#mVibe').onclick=()=>{vibeOn=!vibeOn;store.set('fh.vibe',vibeOn);if(vibeOn)buzz(30);showMenu()};
+  $('#mReset').onclick=showConfirmReset;$('#mClose').onclick=hideOverlay;
+}
+function showConfirmReset(){
+  const t=totalStars();
+  showOverlay(`<h2>Start over?</h2>
+    <p>This takes you back to level 1${t?` and erases your ${t} stars and unlocked accessories`:''}. Your daily streak stays.</p>
+    <button class="btn primary" id="rCancel">Keep my progress</button>
+    <button class="btn danger" id="rYes">Erase and start over</button>`,true);
+  $('#rCancel').onclick=showMenu;
+  $('#rYes').onclick=()=>{best={};store.set('fh.stars',best);wear='';store.set('fh.wear','');maxLevel=1;store.set('fh.max',1);startLevel(1)};
+}
+// Level list: replay any level reached so far for more stars (GAME_DESIGN.md: "Stars give a reason to replay easy levels").
+function showLevels(){
+  const cur=mode==='level'?level:0;
+  const cells=[];
+  for(let L=1;L<=maxLevel;L++){
+    const s=+best[L]||0,storm=L<=LEVEL_PACK.length?!!LEVEL_PACK[L-1].boss:L%10===0;
+    cells.push(`<button class="lvb${storm?' storm':''}" data-l="${L}" aria-current="${L===cur}" aria-label="Level ${L}${storm?', Storm':''}, ${s} of 3 stars">${L}<small>${'★'.repeat(s)}</small></button>`);
+  }
+  showOverlay(`<h2>Levels</h2><p>${totalStars()} stars so far. Replay any level to earn the ones you missed.</p>
+    <div class="lvgrid">${cells.join('')}</div>
+    <button class="btn primary" id="lvClose">Back</button>`,true);
+  card.querySelectorAll('.lvb').forEach(b=>b.onclick=()=>startLevel(+b.dataset.l));
+  $('#lvClose').onclick=showMenu;
+  const at=card.querySelector('.lvb[aria-current="true"]')||card.querySelector('.lvb:last-child');
+  if(at)at.scrollIntoView({block:'center'});
 }
 function showHow(){
   showOverlay(`<h2>How to play</h2><ul class="howto">
@@ -654,7 +732,7 @@ function showHow(){
     <li><span>2</span>If its colour matches the open nest, it lands there. Three birds fill a nest, and the next nest moves in.</li>
     <li><span>3</span>Any other bird waits on the wire. Waiting birds hop into their nest as soon as it arrives.</li>
     <li><span>4</span>Fill every perch on the wire and the level is lost. Watch the “Up next” row and free birds in the right order.</li></ul>
-    <button class="btn primary" id="howOk">Got it</button>`);
+    <button class="btn primary" id="howOk">Got it</button>`,true);
   $('#howOk').onclick=hideOverlay;
 }
 /* ---------- tutorial hand: level 1, until the player has freed two birds ---------- */
@@ -686,7 +764,12 @@ function feathers(){
 
 /* ---------- wiring ---------- */
 gridEl.addEventListener('pointerdown',e=>{const c=e.target.closest('.cell');if(!c)return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
-gridEl.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const c=e.target.closest('.cell');if(!c)return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
+gridEl.addEventListener('keydown',e=>{
+  const c=e.target.closest('.cell');if(!c||!G)return;
+  if(ARROWS[e.key]){e.preventDefault();arrowMove(c,e.key);return}
+  if(e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();ensureAudio();tapCell(+c.dataset.i)});
+overlay.addEventListener('click',e=>{if(e.target===overlay&&overlayDismiss)hideOverlay()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlayDismiss){e.preventDefault();hideOverlay();$('#menuBtn').focus({preventScroll:true})}});
 $('#undoBtn').onclick=()=>{ensureAudio();doUndo()};
 $('#hintBtn').onclick=()=>{ensureAudio();doHint()};
 $('#perchBtn').onclick=()=>{ensureAudio();doPerch()};
