@@ -123,3 +123,16 @@ test('mirroring a level keeps every bird path the same length', () => {
   const t = E.transformLevel(lv, true, true, [5, 4, 3, 2, 1, 0]);
   assert.deepEqual(E.freeMoves(lv, E.initLite(lv)), E.freeMoves(t, E.initLite(t)));
 });
+
+// ---------- daily puzzle ----------
+test('the daily puzzle is the same all day, changes day to day, and is always solvable', () => {
+  const day = 20380; // 18 Oct 2025
+  assert.deepEqual(E.dailyLevel(day, LEVEL_PACK), E.dailyLevel(day, LEVEL_PACK));
+  const seen = new Set();
+  for (let d = day; d < day + 30; d++) {
+    const lv = E.dailyLevel(d, LEVEL_PACK);
+    seen.add(E.encodeLevel(lv));
+    assert.ok(E.solve(lv, E.initLite(lv), 200000), `day ${d} unsolvable`);
+  }
+  assert.ok(seen.size >= 25, `only ${seen.size} distinct puzzles in 30 days`);
+});

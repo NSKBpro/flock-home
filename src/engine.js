@@ -272,7 +272,20 @@ function levelFor(L, pack) {
   return generate(L);
 }
 
+// Daily puzzle for a given day number (days since 1970-01-01 in the player's local time).
+// Everyone gets the same puzzle on the same date: a mid-difficulty pack level (no Storms),
+// mirrored and recoloured by the day, so it is solvable and never looks like a level they played.
+function dailyLevel(day, pack) {
+  const pool = [];
+  for (let i = 14; i < Math.min(80, pack.length); i++) if (!pack[i].boss) pool.push(i);
+  const rand = rng(day * 2246822519 + 3266489917);
+  const e = pack[pool[Math.floor(rand() * pool.length)]];
+  const perm = shuffle([...Array(PALN).keys()], rand);
+  const lv = transformLevel(decodeLevel(e.s), rand() < 0.5, rand() < 0.5, perm);
+  return { ...lv, L: 0, day, daily: true, boss: false };
+}
+
 if (typeof module !== 'undefined') module.exports = {
   DIRS, PALN, levelParams, rayBlocker, initLite, freeMoves, applyLite, isWon, isLost, solve,
-  buildCandidate, generate, forcedWait, botWinRate, encodeLevel, decodeLevel, transformLevel, levelFor, rng, shuffle,
+  buildCandidate, generate, forcedWait, botWinRate, encodeLevel, decodeLevel, transformLevel, levelFor, dailyLevel, rng, shuffle,
 };
